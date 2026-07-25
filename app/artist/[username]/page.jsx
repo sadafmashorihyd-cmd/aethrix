@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { Feather, Instagram, Twitter, Linkedin, Globe, Upload, Check, Plus } from 'lucide-react'
+import { Feather, Instagram, Twitter, Linkedin, Globe, Upload, Check, Plus, Lock } from 'lucide-react'
 import { supabase } from '../../../lib/supabase'
 
 const MOODS = ['Midnight Rain', 'Melancholy', 'Sunset', 'Cyberpunk', 'Wildfire', 'Deep Ocean']
@@ -25,6 +25,8 @@ function WorkCard({ work, hovered, onHover }) {
 export default function ArtistChamberPage({ params }) {
   const [artist, setArtist] = useState(null)
   const [artworks, setArtworks] = useState([])
+  const [currentUser, setCurrentUser] = useState(null)
+  const [isOwner, setIsOwner] = useState(false)
   const [loading, setLoading] = useState(true)
   const [hoveredId, setHoveredId] = useState(null)
   const [showUpload, setShowUpload] = useState(false)
@@ -32,10 +34,12 @@ export default function ArtistChamberPage({ params }) {
   const [uploadForm, setUploadForm] = useState({ title: '', medium: '', mood: '' })
   const [uploadFile, setUploadFile] = useState(null)
   const [uploaded, setUploaded] = useState(false)
+  const [streak, setStreak] = useState(null)
 
   useEffect(() => {
     fetchArtist()
     fetchArtworks()
+    checkOwner()
   }, [])
 
   const fetchArtist = async () => {
@@ -57,8 +61,33 @@ export default function ArtistChamberPage({ params }) {
     if (data) setArtworks(data)
   }
 
+  const fetchStreak = async () => {
+    const { data } = await supabase
+      .from('streaks')
+      .select('*')
+      .eq('artist_username', params.username)
+      .single()
+    if (data) setStreak(data)
+  }
+
+  const checkOwner = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      setCurrentUser(user)
+      const { data } = await supabase
+        .from('applications')
+        .select('username')
+        .eq('email', user.email)
+        .single()
+      if (data && data.username === params.username) {
+        setIsOwner(true)
+      }
+    }
+    fetchStreak()
+  }
+
   const handleUpload = async () => {
-    if (!uploadFile) return
+    if (!uploadFile || !isOwner) return
     setUploading(true)
     try {
       const fileExt = uploadFile.name.split('.').pop()
@@ -66,6 +95,7 @@ export default function ArtistChamberPage({ params }) {
       const { error: upErr } = await supabase.storage.from('artworks').upload(fileName, uploadFile)
       if (upErr) throw upErr
       const { data: urlData } = supabase.storage.from('artworks').getPublicUrl(fileName)
+
       const { error: dbErr } = await supabase.from('artworks').insert({
         artist_username: params.username,
         image_url: urlData.publicUrl,
@@ -74,6 +104,11 @@ export default function ArtistChamberPage({ params }) {
         mood: uploadForm.mood,
       })
       if (dbErr) throw dbErr
+
+      // Update streak!
+      await supabase.rpc('update_streak', { p_username: params.username })
+      fetchStreak()
+
       setUploaded(true)
       setUploadForm({ title: '', medium: '', mood: '' })
       setUploadFile(null)
@@ -149,22 +184,40 @@ export default function ArtistChamberPage({ params }) {
             </div>
           </div>
 
-          <div className="tenet-card">
-            <p className="section-label">Artist Info</p>
-            <div className="space-y-5">
-              {[
-                { label: 'Medium', val: artist.medium || 'Not specified' },
-                { label: 'Mood', val: artist.mood || 'Not specified' },
-                { label: 'Status', val: '✓ Verified Artist' },
-                { label: 'Works', val: `${allWorks.length} pieces` },
-                { label: 'Joined', val: new Date(artist.created_at).toLocaleDateString() },
-              ].map(r => (
-                <div key={r.label}>
-                  <p className="text-xs tracking-widest uppercase mb-1" style={{ color: 'rgba(234,230,242,0.25)' }}>{r.label}</p>
-                  <p className="font-display text-lg font-light" style={{ color: 'var(--ghost)' }}>{r.val}</p>
-                </div>
-              ))}
+          {/* Stats */}
+          <div className="space-y-4">
+            <div className="tenet-card">
+              <p className="section-label">Artist Info</p>
+              <div className="space-y-5">
+                {[
+                  { label: 'Medium', val: artist.medium || 'Not specified' },
+                  { label: 'Mood', val: artist.mood || 'Not specified' },
+                  { label: 'Status', val: '✓ Verified Artist' },
+                  { label: 'Works', val: `${allWorks.length} pieces` },
+                  { label: 'Joined', val: new Date(artist.created_at).toLocaleDateString() },
+                ].map(r => (
+                  <div key={r.label}>
+                    <p className="text-xs tracking-widest uppercase mb-1" style={{ color: 'rgba(234,230,242,0.25)' }}>{r.label}</p>
+                    <p className="font-display text-lg font-light" style={{ color: 'var(--ghost)' }}>{r.val}</p>
+                  </div>
+                ))}
+              </div>
             </div>
+
+            {/* Streak Card */}
+            {streak && (
+              <div className="tenet-card text-center"
+                style={{ border: '1px solid rgba(255,107,53,0.2)', background: 'rgba(255,107,53,0.04)' }}>
+                <p className="text-xs tracking-widest uppercase mb-2" style={{ color: 'rgba(234,230,242,0.3)' }}>🔥 Streak</p>
+                <p className="font-display font-light" style={{ fontSize: '3.5rem', color: 'var(--ember)', lineHeight: 1 }}>
+                  {streak.current_streak}
+                </p>
+                <p className="text-xs mt-1" style={{ color: 'rgba(234,230,242,0.3)' }}>days · {streak.total_uploads} total uploads</p>
+                <a href="/streaks" className="text-xs mt-3 block" style={{ color: 'var(--ember)', opacity: 0.7 }}>
+                  View Leaderboard →
+                </a>
+              </div>
+            )}
           </div>
         </div>
 
@@ -178,13 +231,20 @@ export default function ArtistChamberPage({ params }) {
               {allWorks.length} {allWorks.length === 1 ? 'Masterpiece' : 'Masterpieces'}
             </h2>
           </div>
-          <button onClick={() => setShowUpload(!showUpload)} className="btn-velvet">
-            <Plus size={13} /><span>Add Artwork</span>
-          </button>
+          {isOwner ? (
+            <button onClick={() => setShowUpload(!showUpload)} className="btn-velvet">
+              <Plus size={13} /><span>Add Artwork</span>
+            </button>
+          ) : (
+            <div className="flex items-center gap-2 text-xs" style={{ color: 'rgba(234,230,242,0.2)' }}>
+              <Lock size={11} />
+              <span>Only owner can add</span>
+            </div>
+          )}
         </div>
 
-        {/* Upload Form */}
-        {showUpload && (
+        {/* Upload Form — only for owner */}
+        {showUpload && isOwner && (
           <div className="rounded-sm p-6 mb-8" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(0,229,255,0.15)' }}>
             <h3 className="font-display text-2xl font-light mb-5" style={{ color: 'var(--ghost)' }}>Upload New Artwork</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
@@ -233,7 +293,7 @@ export default function ArtistChamberPage({ params }) {
             <button onClick={handleUpload} disabled={!uploadFile || uploading}
               className="btn-ember w-full justify-center"
               style={{ opacity: !uploadFile || uploading ? 0.6 : 1 }}>
-              {uploaded ? <><Check size={14} /><span>Uploaded!</span></> :
+              {uploaded ? <><Check size={14} /><span>Uploaded! Streak updated! 🔥</span></> :
                 uploading ? <span>Uploading...</span> :
                   <><Upload size={14} /><span>Upload Artwork</span></>}
             </button>

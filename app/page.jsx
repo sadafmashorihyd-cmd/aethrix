@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
-import { ArrowRight, Feather, Eye, EyeOff, Fingerprint, Sparkles, Lock, Infinity } from 'lucide-react'
+import { ArrowRight, Feather, EyeOff, Fingerprint, Sparkles, Lock, Infinity } from 'lucide-react'
+import { supabase } from '../lib/supabase'
 
 function InkDrop() {
   return (
@@ -37,28 +38,33 @@ function ScrollReveal({ children, delay = 0, className = '' }) {
   )
 }
 
-const PREVIEWS = [
-  { id: 1, aspect: 'aspect-[3/4]',  gradient: 'from-cyan-900/50 via-blue-900/30',   color: '#00E5FF', title: 'Midnight Reverie',  artist: 'Zainab K.' },
-  { id: 2, aspect: 'aspect-square',  gradient: 'from-violet-900/50 via-purple-900/30', color: '#B57BFF', title: 'Shattered Gold',    artist: 'Arslan M.' },
-  { id: 3, aspect: 'aspect-[4/5]',  gradient: 'from-orange-900/40 via-red-900/20',   color: '#FF6B35', title: 'Desert Storm',      artist: 'Aisha R.' },
-  { id: 4, aspect: 'aspect-[3/4]',  gradient: 'from-teal-900/40 via-cyan-900/20',    color: '#00E5FF', title: 'Neon Dharma',       artist: 'Haris J.' },
-]
-
 const TENETS = [
-  { icon: EyeOff,       title: 'Zero Algorithm Noise',   body: 'Your work is seen because it deserves to be — not because you paid or posted at the right hour.',     color: 'var(--cyan)',   num: '01' },
-  { icon: Lock,         title: 'The Velvet Rope',        body: 'Every artist here earned their Passport. No brands, no bots, no noise. Only hands that carry ink.',     color: 'var(--violet)', num: '02' },
-  { icon: Sparkles,     title: 'Mood-Match Discovery',   body: 'Browse by feeling, not follower count. Find art that mirrors your exact state of mind at midnight.',    color: 'var(--ember)',  num: '03' },
-  { icon: Fingerprint,  title: 'Your Artist Chamber',    body: 'A custom portfolio page that carries your name like a permanent exhibition — not a feed, a gallery.',   color: 'var(--cyan)',   num: '04' },
-  { icon: Infinity,     title: 'The Infinite Canvas',    body: 'A living, breathing gallery. Every visit, a new constellation of masterpieces waiting to be found.',    color: 'var(--violet)', num: '05' },
-  { icon: Feather,      title: 'Pure Expression',        body: 'No like counts. No toxic metrics. The work speaks, and the right eyes will always find the right art.', color: 'var(--ember)',  num: '06' },
+  { icon: EyeOff, title: 'Zero Algorithm Noise', body: 'Your work is seen because it deserves to be — not because you paid or posted at the right hour.', color: 'var(--cyan)', num: '01' },
+  { icon: Lock, title: 'The Velvet Rope', body: 'Every artist here earned their Passport. No brands, no bots, no noise. Only hands that carry ink.', color: 'var(--violet)', num: '02' },
+  { icon: Sparkles, title: 'Mood-Match Discovery', body: 'Browse by feeling, not follower count. Find art that mirrors your exact state of mind at midnight.', color: 'var(--ember)', num: '03' },
+  { icon: Fingerprint, title: 'Your Artist Chamber', body: 'A custom portfolio page that carries your name like a permanent exhibition — not a feed, a gallery.', color: 'var(--cyan)', num: '04' },
+  { icon: Infinity, title: 'The Infinite Canvas', body: 'A living, breathing gallery. Every visit, a new constellation of masterpieces waiting to be found.', color: 'var(--violet)', num: '05' },
+  { icon: Feather, title: 'Pure Expression', body: 'No like counts. No toxic metrics. The work speaks, and the right eyes will always find the right art.', color: 'var(--ember)', num: '06' },
 ]
 
 export default function HomePage() {
   const [cursor, setCursor] = useState({ x: 0, y: 0 })
+  const [previews, setPreviews] = useState([])
+
   useEffect(() => {
     const h = (e) => setCursor({ x: e.clientX, y: e.clientY })
     window.addEventListener('mousemove', h)
     return () => window.removeEventListener('mousemove', h)
+  }, [])
+
+  useEffect(() => {
+    supabase
+      .from('applications')
+      .select('*')
+      .eq('status', 'approved')
+      .not('image_url', 'is', null)
+      .limit(4)
+      .then(({ data }) => { if (data) setPreviews(data) })
   }, [])
 
   return (
@@ -71,7 +77,7 @@ export default function HomePage() {
         transition: 'left 0.12s ease, top 0.12s ease',
       }} />
 
-      {/* ── HERO ── */}
+      {/* HERO */}
       <section className="hero-section">
         <div className="max-w-7xl mx-auto w-full px-4 md:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
@@ -110,18 +116,14 @@ export default function HomePage() {
             </div>
           </div>
         </div>
-        {/* Scroll hint */}
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-25">
           <div className="w-px h-10" style={{ background: 'linear-gradient(to bottom, var(--cyan), transparent)', animation: 'breathe 2s ease-in-out infinite' }} />
           <p className="text-xs tracking-widest uppercase" style={{ color: 'var(--ghost-dim)' }}>Descend</p>
         </div>
       </section>
 
-      {/* ── MANIFESTO ── */}
+      {/* MANIFESTO */}
       <section className="py-24 md:py-36 px-4 md:px-8 relative overflow-hidden">
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="w-[600px] h-[600px] rounded-full" style={{ background: 'radial-gradient(circle, rgba(181,123,255,0.04), transparent)', filter: 'blur(60px)' }} />
-        </div>
         <div className="max-w-4xl mx-auto text-center relative z-10">
           <ScrollReveal><span className="section-label">The Sacred Law</span></ScrollReveal>
           <div className="space-y-4 md:space-y-6">
@@ -129,7 +131,7 @@ export default function HomePage() {
               { text: 'Your art was never meant', italic: false },
               { text: 'to chase an algorithm.', italic: true, color: 'var(--cyan)' },
               { text: 'It was meant to', italic: false },
-              { text: 'stop someone\'s heart.', italic: true, color: 'var(--ember)' },
+              { text: "stop someone's heart.", italic: true, color: 'var(--ember)' },
             ].map((line, i) => (
               <ScrollReveal key={i} delay={i * 120}>
                 <p className="font-display font-light leading-[1.05]"
@@ -142,8 +144,7 @@ export default function HomePage() {
           <ScrollReveal delay={600}>
             <div className="mt-14 max-w-xl mx-auto">
               <p className="font-display text-lg font-light italic leading-relaxed" style={{ color: 'rgba(234,230,242,0.38)' }}>
-                "Every great gallery has a velvet rope. Ours is digital, and it only opens
-                for those whose hands know the weight of a brush."
+                "Every great gallery has a velvet rope. Ours is digital, and it only opens for those whose hands know the weight of a brush."
               </p>
               <p className="mt-4 text-xs tracking-widest uppercase" style={{ color: 'rgba(0,229,255,0.5)' }}>
                 — The AETHRIX Charter, Article I
@@ -155,7 +156,7 @@ export default function HomePage() {
 
       <div className="glow-line max-w-7xl mx-auto px-4 md:px-8" />
 
-      {/* ── GALLERY PREVIEW ── */}
+      {/* GALLERY PREVIEW - REAL DATA */}
       <section className="py-20 px-4 md:px-8">
         <div className="max-w-7xl mx-auto">
           <ScrollReveal>
@@ -169,30 +170,44 @@ export default function HomePage() {
               </a>
             </div>
           </ScrollReveal>
-          <div className="masonry-grid">
-            {PREVIEWS.map((art, i) => (
-              <ScrollReveal key={art.id} delay={i * 100}>
-                <div className="artwork-card group">
-                  <div className={`w-full ${art.aspect} bg-gradient-to-b ${art.gradient} to-void relative overflow-hidden`}>
-                    <div className="absolute inset-0 noise-overlay" style={{ opacity: 0.85 }} />
-                    <div className="absolute inset-0 flex items-center justify-center opacity-25 group-hover:opacity-50 transition-opacity duration-500">
-                      <div className="w-1/2 h-1/2 rounded-full" style={{ background: `radial-gradient(circle, ${art.color}, transparent)`, filter: 'blur(25px)' }} />
+
+          {previews.length === 0 ? (
+            <ScrollReveal>
+              <div className="text-center py-20">
+                <Feather size={32} className="mx-auto mb-4 opacity-20" strokeWidth={0.8} />
+                <p className="font-display text-xl font-light" style={{ color: 'rgba(234,230,242,0.3)' }}>
+                  Gallery opening soon. Apply for your passport.
+                </p>
+              </div>
+            </ScrollReveal>
+          ) : (
+            <div className="masonry-grid">
+              {previews.map((art, i) => (
+                <ScrollReveal key={art.id} delay={i * 100}>
+                  <div className="artwork-card group">
+                    <div className="w-full relative overflow-hidden" style={{ minHeight: '200px' }}>
+                      <img src={art.image_url} alt={art.name}
+                        className="w-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                    </div>
+                    <div className="artwork-card-overlay">
+                      <a href={`/artist/${art.username}`}
+                        className="text-xs tracking-widest uppercase mb-1 block"
+                        style={{ color: 'var(--cyan)', opacity: 0.7 }}>
+                        {art.name}
+                      </a>
+                      <p className="font-display text-lg font-light" style={{ color: 'var(--ghost)' }}>{art.medium}</p>
                     </div>
                   </div>
-                  <div className="artwork-card-overlay">
-                    <p className="text-xs tracking-widest uppercase mb-1" style={{ color: art.color, opacity: 0.7 }}>{art.artist}</p>
-                    <p className="font-display text-lg font-light" style={{ color: 'var(--ghost)' }}>{art.title}</p>
-                  </div>
-                </div>
-              </ScrollReveal>
-            ))}
-          </div>
+                </ScrollReveal>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
       <div className="glow-line max-w-7xl mx-auto px-4 md:px-8" />
 
-      {/* ── TENETS ── */}
+      {/* TENETS */}
       <section className="py-24 px-4 md:px-8">
         <div className="max-w-7xl mx-auto">
           <ScrollReveal>
@@ -222,11 +237,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── CTA ── */}
+      {/* CTA */}
       <section className="py-36 px-4 md:px-8 relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-          <div className="w-[500px] h-[250px] rounded-full" style={{ background: 'radial-gradient(ellipse, rgba(0,229,255,0.07), transparent)', filter: 'blur(50px)' }} />
-        </div>
         <div className="max-w-2xl mx-auto text-center relative z-10">
           <ScrollReveal>
             <span className="section-label">Ready to Enter?</span>
@@ -242,9 +254,6 @@ export default function HomePage() {
               <span>Apply for Your Artist Passport</span>
               <ArrowRight size={15} />
             </a>
-            <p className="mt-5 text-xs tracking-widest uppercase" style={{ color: 'rgba(234,230,242,0.18)' }}>
-              Free forever for verified artists
-            </p>
           </ScrollReveal>
         </div>
       </section>

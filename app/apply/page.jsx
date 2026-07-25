@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { Upload, Feather, ArrowRight, Check } from 'lucide-react'
-import { supabase } from '../../../lib/supabase'
+import { supabase } from '../../lib/supabase'
 
 const STEPS = ['Identity', 'Your Art', 'Manifesto', 'Submit']
 const MOODS = ['Midnight Rain', 'Melancholy', 'Sunset', 'Cyberpunk', 'Wildfire', 'Deep Ocean']

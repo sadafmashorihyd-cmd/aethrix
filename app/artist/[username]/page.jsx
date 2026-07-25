@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { Search, Feather, MapPin } from 'lucide-react'
-import { supabase } from '../../lib/supabase'
+import { supabase } from '../../../lib/supabase'
 
 export default function ArtistsPage() {
   const [artists, setArtists] = useState([])

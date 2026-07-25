@@ -11,23 +11,19 @@ export default function ChatPage() {
     const [sending, setSending] = useState(false)
     const bottomRef = useRef(null)
     const inputRef = useRef(null)
+    const messagesRef = useRef([])
 
     useEffect(() => {
         init()
-        const channel = supabase
-            .channel('public:messages')
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' },
-                payload => setMessages(prev => [...prev, payload.new])
-            )
-            .subscribe()
-        return () => supabase.removeChannel(channel)
     }, [])
 
     useEffect(() => {
+        messagesRef.current = messages
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
     }, [messages])
 
     const init = async () => {
+        // Get current user
         const { data: { user } } = await supabase.auth.getUser()
         if (user) {
             const { data } = await supabase
@@ -38,6 +34,8 @@ export default function ChatPage() {
                 .single()
             if (data) setArtist(data)
         }
+
+        // Fetch messages
         const { data: msgs } = await supabase
             .from('messages')
             .select('*')
@@ -45,6 +43,24 @@ export default function ChatPage() {
             .limit(100)
         if (msgs) setMessages(msgs)
         setLoading(false)
+
+        // Realtime subscription
+        const channel = supabase
+            .channel('chat-room')
+            .on('postgres_changes',
+                { event: 'INSERT', schema: 'public', table: 'messages' },
+                (payload) => {
+                    setMessages(prev => {
+                        // Avoid duplicates
+                        const exists = prev.find(m => m.id === payload.new.id)
+                        if (exists) return prev
+                        return [...prev, payload.new]
+                    })
+                }
+            )
+            .subscribe()
+
+        return () => supabase.removeChannel(channel)
     }
 
     const sendMessage = async () => {
@@ -52,11 +68,14 @@ export default function ChatPage() {
         if (!text || !artist || sending) return
         setSending(true)
         setNewMsg('')
-        await supabase.from('messages').insert({
+
+        const { error } = await supabase.from('messages').insert({
             artist_username: artist.username,
             artist_name: artist.name,
             message: text,
         })
+
+        if (error) console.error(error)
         setSending(false)
         inputRef.current?.focus()
     }
@@ -94,6 +113,7 @@ export default function ChatPage() {
                 {/* Messages */}
                 <div className="flex-1 overflow-y-auto rounded-sm p-4 space-y-3 mb-4"
                     style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', minHeight: 0 }}>
+
                     {loading ? (
                         <div className="text-center py-10">
                             <p className="font-display text-lg font-light" style={{ color: 'rgba(234,230,242,0.3)' }}>Loading...</p>
@@ -102,7 +122,7 @@ export default function ChatPage() {
                         <div className="text-center py-16">
                             <Feather size={32} className="mx-auto mb-4 opacity-20" strokeWidth={0.8} />
                             <p className="font-display text-xl font-light" style={{ color: 'rgba(234,230,242,0.3)' }}>
-                                No messages yet. Be the first!
+                                No messages yet. Start the conversation!
                             </p>
                         </div>
                     ) : messages.map((msg, i) => {
@@ -116,10 +136,14 @@ export default function ChatPage() {
                                 <div style={{ maxWidth: '75%' }}>
                                     {showName && !isMe && (
                                         <div className="flex items-center gap-2 mb-1 ml-1">
-                                            <a href={`/artist/${msg.artist_username}`} className="text-xs tracking-wider" style={{ color }}>
+                                            <a href={`/artist/${msg.artist_username}`}
+                                                className="text-xs tracking-wider hover:underline"
+                                                style={{ color }}>
                                                 {msg.artist_name}
                                             </a>
-                                            <span className="text-xs" style={{ color: 'rgba(234,230,242,0.2)' }}>{formatTime(msg.created_at)}</span>
+                                            <span className="text-xs" style={{ color: 'rgba(234,230,242,0.2)' }}>
+                                                {formatTime(msg.created_at)}
+                                            </span>
                                         </div>
                                     )}
                                     <div className="rounded-sm px-4 py-2.5"
@@ -145,15 +169,19 @@ export default function ChatPage() {
                 <div className="pb-6 flex-shrink-0">
                     {artist ? (
                         <div className="flex gap-3">
-                            <input ref={inputRef} type="text"
-                                placeholder="Share your thoughts with fellow artists..."
+                            <input
+                                ref={inputRef}
+                                type="text"
+                                placeholder="Share your thoughts..."
                                 value={newMsg}
                                 onChange={e => setNewMsg(e.target.value)}
                                 onKeyDown={handleKey}
                                 className="input-sacred flex-1"
                                 style={{ borderColor: 'rgba(0,229,255,0.2)' }}
                             />
-                            <button onClick={sendMessage} disabled={!newMsg.trim() || sending}
+                            <button
+                                onClick={sendMessage}
+                                disabled={!newMsg.trim() || sending}
                                 className="btn-ember px-5"
                                 style={{ opacity: !newMsg.trim() || sending ? 0.5 : 1 }}>
                                 <Send size={16} />
@@ -163,7 +191,7 @@ export default function ChatPage() {
                         <div className="text-center p-4 rounded-sm"
                             style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
                             <p className="text-sm" style={{ color: 'rgba(234,230,242,0.4)' }}>
-                                <a href="/login" style={{ color: 'var(--cyan)' }}>Sign in</a> as a verified artist to join the conversation
+                                <a href="/login" style={{ color: 'var(--cyan)' }}>Sign in</a> as a verified artist to chat
                             </p>
                         </div>
                     )}

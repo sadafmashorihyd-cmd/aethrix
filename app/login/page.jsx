@@ -13,7 +13,7 @@ export default function LoginPage() {
 
   async function handleAuth() {
     if (!email || !password) {
-      setMessage({ text: 'Email aur password dono bharo!', type: 'error' })
+      setMessage({ text: 'Email aur password dono daalo!', type: 'error' })
       return
     }
     setLoading(true)
@@ -24,12 +24,13 @@ export default function LoginPage() {
       if (error) {
         setMessage({ text: error.message, type: 'error' })
       } else {
-        setMessage({ text: 'Account ban gaya! Email check karo confirmation ke liye.', type: 'success' })
+        setMessage({ text: 'Account created! Now sign in.', type: 'success' })
+        setIsSignup(false)
       }
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) {
-        setMessage({ text: 'Email ya password galat hai!', type: 'error' })
+        setMessage({ text: 'Email or password is incorrect!', type: 'error' })
       } else {
         window.location.href = '/dashboard'
       }
@@ -55,7 +56,6 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Toggle */}
         <div className="flex rounded-sm mb-6 p-1" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
           <button type="button" onClick={() => setIsSignup(false)}
             className="flex-1 py-2 text-xs tracking-widest uppercase rounded-sm transition-all duration-300"
@@ -70,7 +70,6 @@ export default function LoginPage() {
         </div>
 
         <div className="rounded-sm p-7" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
-
           {message.text && (
             <div className="mb-4 p-3 rounded-sm text-sm"
               style={{
@@ -85,37 +84,30 @@ export default function LoginPage() {
           <div className="space-y-4 mb-6">
             <div>
               <label className="block text-xs tracking-widest uppercase mb-2" style={{ color: 'rgba(234,230,242,0.3)' }}>Email</label>
-              <input
-                type="email"
-                placeholder="your@email.com"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                className="input-sacred"
-              />
+              <input type="email" placeholder="your@email.com" value={email}
+                onChange={e => setEmail(e.target.value)} className="input-sacred" />
             </div>
             <div>
               <label className="block text-xs tracking-widest uppercase mb-2" style={{ color: 'rgba(234,230,242,0.3)' }}>Password</label>
               <div className="relative">
-                <input
-                  type={show ? 'text' : 'password'}
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  className="input-sacred pr-10"
-                />
+                <input type={show ? 'text' : 'password'} placeholder="••••••••" value={password}
+                  onChange={e => setPassword(e.target.value)} className="input-sacred pr-10" />
                 <button type="button" onClick={() => setShow(!show)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2"
-                  style={{ color: 'rgba(234,230,242,0.3)' }}>
+                  className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'rgba(234,230,242,0.3)' }}>
                   {show ? <EyeOff size={14} /> : <Eye size={14} />}
                 </button>
               </div>
             </div>
+            {!isSignup && (
+              <div className="text-right">
+                <a href="/forgot-password" className="text-xs" style={{ color: 'rgba(0,229,255,0.5)' }}>
+                  Forgot password?
+                </a>
+              </div>
+            )}
           </div>
 
-          <button
-            type="button"
-            onClick={handleAuth}
-            disabled={loading}
+          <button type="button" onClick={handleAuth} disabled={loading}
             style={{
               width: '100%',
               display: 'flex',
@@ -139,9 +131,10 @@ export default function LoginPage() {
 
           <div className="mt-6 pt-5 text-center" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
             <p className="text-xs" style={{ color: 'rgba(234,230,242,0.25)' }}>
-              {isSignup ? 'Already have a passport? ' : 'No passport yet? '}
-              <button type="button" onClick={() => setIsSignup(!isSignup)} style={{ color: 'var(--cyan)', background: 'none', border: 'none', cursor: 'pointer' }}>
-                {isSignup ? 'Sign in here' : 'Apply here'}
+              {isSignup ? 'Already have an account? ' : 'No passport yet? '}
+              <button type="button" onClick={() => setIsSignup(!isSignup)}
+                style={{ color: 'var(--cyan)', background: 'none', border: 'none', cursor: 'pointer' }}>
+                {isSignup ? 'Sign in' : 'Apply here'}
               </button>
             </p>
           </div>

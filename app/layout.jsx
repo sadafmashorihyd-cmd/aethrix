@@ -9,7 +9,7 @@ const inter = Inter({
 
 export const metadata = {
   title: 'AETHRIX — Where Art Transcends',
-  description: "The world's first sacred digital sanctuary for true artists. No algorithms. No noise. Only pure expression.",
+  description: "The world's first sacred digital sanctuary for true artists.",
 }
 
 export default function RootLayout({ children }) {
@@ -33,28 +33,24 @@ export default function RootLayout({ children }) {
 
         <header className="fixed top-0 left-0 right-0 z-50 nav-glass">
           <nav className="max-w-7xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between gap-4">
-
-            {/* Logo */}
             <a href="/" className="flex-shrink-0 flex items-center">
               <span className="font-display text-xl md:text-2xl tracking-[0.25em] text-ghost font-light">AE</span>
               <span className="font-display text-xl md:text-2xl tracking-[0.25em] text-cyan font-light">THRIX</span>
             </a>
-
-            {/* Center nav */}
-            <div className="hidden md:flex items-center gap-6 lg:gap-10">
+            <div className="hidden md:flex items-center gap-6">
               <a href="/gallery" className="nav-link">Gallery</a>
               <a href="/artists" className="nav-link">Artists</a>
+              <a href="/streaks" className="nav-link">Streaks</a>
+              <a href="/chat" className="nav-link">Chat</a>
               <a href="/sanctuary" className="nav-link">Sanctuary</a>
             </div>
-
-            {/* Right actions */}
             <div className="flex items-center gap-3">
+              <a href="/dashboard" className="nav-link hidden sm:block">Dashboard</a>
               <a href="/login" className="nav-link hidden sm:block">Sign In</a>
               <a href="/apply" className="btn-velvet text-xs px-3 py-2 md:px-5 md:py-2.5">
-                Apply for Passport
+                Apply
               </a>
             </div>
-
           </nav>
         </header>
 
@@ -74,7 +70,7 @@ export default function RootLayout({ children }) {
             <div>
               <p className="text-ghost/20 uppercase tracking-widest text-xs mb-4">Navigate</p>
               <div className="flex flex-col gap-2">
-                {['Gallery', 'Artists', 'Sanctuary', 'About'].map((item) => (
+                {['Gallery', 'Artists', 'Streaks', 'Chat', 'Sanctuary'].map((item) => (
                   <a key={item} href={`/${item.toLowerCase()}`} className="footer-link">{item}</a>
                 ))}
               </div>

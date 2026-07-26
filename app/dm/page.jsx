@@ -32,10 +32,36 @@ function DM() {
     const [online, setOnline] = useState([])
     const chatRef = useRef(null)
     const inputRef = useRef(null)
+    const meRef = useRef(null)
+    const selRef = useRef(null)
 
     useEffect(() => { boot() }, [])
-    useEffect(() => { if (sel && me) fetchMsgs(sel.username) }, [sel?.username, me?.username])
-    useEffect(() => { if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight }, [msgs])
+
+    // Keep refs updated
+    useEffect(() => { meRef.current = me }, [me])
+    useEffect(() => { selRef.current = sel }, [sel])
+
+    // Fetch messages when user selected
+    useEffect(() => {
+        if (sel && me) fetchMsgs(sel.username)
+    }, [sel?.username, me?.username])
+
+    // Polling every 2 seconds for new messages
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (meRef.current && selRef.current) {
+                fetchMsgsQuiet(selRef.current.username)
+            }
+            if (meRef.current) {
+                fetchConvs(meRef.current.username)
+            }
+        }, 2000)
+        return () => clearInterval(interval)
+    }, [])
+
+    useEffect(() => {
+        if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight
+    }, [msgs])
 
     const isOnline = (u) => online.some(x => x.username === u)
 
@@ -51,7 +77,11 @@ function DM() {
         const { data: meData } = await supabase.from('applications').select('*').eq('email', user.email).eq('status', 'approved').single()
         if (!meData) { window.location.href = '/'; return }
         setMe(meData)
-        await supabase.from('online_status').upsert({ username: meData.username, is_online: true, last_seen: new Date().toISOString() }, { onConflict: 'username' })
+        meRef.current = meData
+
+        try {
+            await supabase.from('online_status').upsert({ username: meData.username, is_online: true, last_seen: new Date().toISOString() }, { onConflict: 'username' })
+        } catch (e) { console.log('online status error:', e) }
 
         const { data: allData } = await supabase.from('applications').select('*').eq('status', 'approved').neq('username', meData.username).order('name', { ascending: true })
         if (allData) setAll(allData)
@@ -63,23 +93,8 @@ function DM() {
         const urlUser = sp.get('user')
         if (urlUser && allData) {
             const found = allData.find(a => a.username === urlUser)
-            if (found) setSel(found)
+            if (found) { setSel(found); selRef.current = found }
         }
-
-        // Realtime
-        const ch = supabase.channel(`dm-${Date.now()}`)
-        ch.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'direct_messages' },
-            p => {
-                const msg = p.new
-                if (msg.sender_username === meData.username || msg.receiver_username === meData.username) {
-                    setMsgs(prev => prev.find(m => m.id === msg.id) ? prev : [...prev, msg])
-                    fetchConvs(meData.username)
-                }
-            })
-            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'direct_messages' },
-                p => setMsgs(prev => prev.map(m => m.id === p.new.id ? p.new : m)))
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'online_status' }, fetchOnline)
-            .subscribe()
     }
 
     const fetchConvs = async (myU) => {
@@ -97,13 +112,28 @@ function DM() {
     }
 
     const fetchMsgs = async (other) => {
-        if (!me) return
+        if (!meRef.current) return
         const { data } = await supabase.from('direct_messages').select('*')
-            .or(`and(sender_username.eq.${me.username},receiver_username.eq.${other}),and(sender_username.eq.${other},receiver_username.eq.${me.username})`)
+            .or(`and(sender_username.eq.${meRef.current.username},receiver_username.eq.${other}),and(sender_username.eq.${other},receiver_username.eq.${meRef.current.username})`)
             .order('created_at', { ascending: true })
         if (data) setMsgs(data)
-        await supabase.from('direct_messages').update({ read: true }).eq('receiver_username', me.username).eq('sender_username', other)
-        fetchConvs(me.username)
+        await supabase.from('direct_messages').update({ read: true }).eq('receiver_username', meRef.current.username).eq('sender_username', other)
+        fetchConvs(meRef.current.username)
+    }
+
+    // Silent fetch — no scroll jump
+    const fetchMsgsQuiet = async (other) => {
+        if (!meRef.current) return
+        const { data } = await supabase.from('direct_messages').select('*')
+            .or(`and(sender_username.eq.${meRef.current.username},receiver_username.eq.${other}),and(sender_username.eq.${other},receiver_username.eq.${meRef.current.username})`)
+            .order('created_at', { ascending: true })
+        if (data) {
+            setMsgs(prev => {
+                // Only update if new messages arrived
+                if (data.length !== prev.length) return data
+                return prev
+            })
+        }
     }
 
     const send = async () => {
@@ -115,12 +145,16 @@ function DM() {
             receiver_username: sel.username, message: t,
         })
         if (!error) {
-            await supabase.from('notifications').insert({
-                username: sel.username, type: 'dm',
-                message: `${me.name} sent you a message: "${t.substring(0, 40)}"`,
-                link: `/dm?user=${me.username}`,
-            })
+            try {
+                await supabase.from('notifications').insert({
+                    username: sel.username, type: 'dm',
+                    message: `${me.name} sent you a message: "${t.substring(0, 40)}"`,
+                    link: `/dm?user=${me.username}`,
+                })
+            } catch (e) { }
         }
+        // Immediately fetch to show sent message
+        await fetchMsgs(sel.username)
         setSending(false)
         setTimeout(() => inputRef.current?.focus(), 50)
     }
@@ -133,6 +167,7 @@ function DM() {
             await supabase.storage.from('artworks').upload(n, file)
             const { data: ud } = supabase.storage.from('artworks').getPublicUrl(n)
             await supabase.from('direct_messages').insert({ sender_username: me.username, sender_name: me.name, receiver_username: sel.username, message: '📷 Image', image_url: ud.publicUrl })
+            await fetchMsgs(sel.username)
         } catch (err) { console.error(err) }
         setImgUp(false); e.target.value = ''
     }
@@ -146,6 +181,7 @@ function DM() {
         if (!nr[emoji]?.length) delete nr[emoji]
         await supabase.from('direct_messages').update({ reactions: nr }).eq('id', msg.id)
         setEmojiFor(null)
+        await fetchMsgs(sel.username)
     }
 
     const handleKey = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }
@@ -160,7 +196,6 @@ function DM() {
 
     return (
         <div style={{ display: 'flex', height: '100%' }}>
-
             {/* SIDEBAR */}
             <div style={{ width: 280, minWidth: 280, flexShrink: 0, borderRight: '1px solid rgba(255,255,255,0.08)', display: sel ? 'none' : 'flex', flexDirection: 'column', height: '100%', background: '#0C0C1E' }} className="md:!flex">
                 <div style={{ padding: '18px 16px 12px', borderBottom: '1px solid rgba(255,255,255,0.07)', flexShrink: 0 }}>
@@ -205,7 +240,6 @@ function DM() {
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', minWidth: 0, background: '#080818' }}>
                 {sel ? (
                     <>
-                        {/* Header */}
                         <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0, background: '#0D0D22' }}>
                             <button onClick={() => setSel(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(234,230,242,0.5)', padding: 4, display: 'flex' }}><ArrowLeft size={20} /></button>
                             <div style={{ position: 'relative', flexShrink: 0 }}>
@@ -223,7 +257,6 @@ function DM() {
                             <a href={`/artist/${sel.username}`} style={{ color: 'rgba(0,240,255,0.5)', fontSize: 12, textDecoration: 'none', flexShrink: 0 }}>View Chamber</a>
                         </div>
 
-                        {/* Messages — ONLY this scrolls */}
                         <div ref={chatRef} style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: 4 }}>
                             {msgs.length === 0 ? (
                                 <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 10 }}>
@@ -252,7 +285,6 @@ function DM() {
                                                     <p style={{ color: '#F2EEF8', fontSize: 14, margin: 0, lineHeight: 1.55 }}>{msg.message}</p>
                                                 </div>
                                             )}
-                                            {/* Reactions */}
                                             {Object.keys(reactions).length > 0 && (
                                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, marginTop: 3, justifyContent: isMe ? 'flex-end' : 'flex-start' }}>
                                                     {Object.entries(reactions).map(([e, u]) => u.length > 0 && (
@@ -263,7 +295,6 @@ function DM() {
                                                     ))}
                                                 </div>
                                             )}
-                                            {/* Seen + time */}
                                             {isLast && (
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4, justifyContent: isMe ? 'flex-end' : 'flex-start' }}>
                                                     <span style={{ color: 'rgba(234,230,242,0.2)', fontSize: 11 }}>{ft(msg.created_at)}</span>
@@ -273,12 +304,9 @@ function DM() {
                                                     )}
                                                 </div>
                                             )}
-                                            {/* Emoji on hover */}
                                             <div className="opacity-0 group-hover:opacity-100 transition-opacity" style={{ display: 'flex', justifyContent: isMe ? 'flex-end' : 'flex-start', marginTop: 2, position: 'relative' }}>
                                                 <button onClick={() => setEmojiFor(emojiFor === msg.id ? null : msg.id)}
-                                                    style={{ fontSize: 14, padding: '2px 8px', borderRadius: 20, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer' }}>
-                                                    😊
-                                                </button>
+                                                    style={{ fontSize: 14, padding: '2px 8px', borderRadius: 20, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer' }}>😊</button>
                                                 {emojiFor === msg.id && (
                                                     <div style={{ position: 'absolute', zIndex: 50, bottom: 28, [isMe ? 'right' : 'left']: 0, background: '#0E0E24', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12, padding: 10, width: 230, boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
                                                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
@@ -300,7 +328,6 @@ function DM() {
                             })}
                         </div>
 
-                        {/* Input */}
                         <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.08)', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 10, background: '#0D0D22' }}>
                             <label style={{ cursor: 'pointer', color: imgUp ? '#00F0FF' : 'rgba(234,230,242,0.4)', display: 'flex', padding: 6, flexShrink: 0 }}>
                                 <Image size={22} />

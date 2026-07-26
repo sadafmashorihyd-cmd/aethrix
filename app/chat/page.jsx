@@ -1,7 +1,9 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { Send, Feather, Trash2, Edit2, Check, X, Image } from 'lucide-react'
+import { Send, Feather, Trash2, Edit2, Check, X, Image, Reply, Smile } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+
+const EMOJI_LIST = ['❤️', '🔥', '✨', '👏', '😮', '😂', '🎨', '💯', '🙌', '👀', '💜', '🫶', '🥹', '😍', '🤩', '💫', '🎭', '🖋️', '🌙', '⭐', '🏆', '💎', '🌊', '🌸', '🦋', '🎯', '💪', '🙏', '😎', '🤍']
 
 export default function ChatPage() {
     const [messages, setMessages] = useState([])
@@ -11,52 +13,32 @@ export default function ChatPage() {
     const [sending, setSending] = useState(false)
     const [editingId, setEditingId] = useState(null)
     const [editText, setEditText] = useState('')
+    const [replyTo, setReplyTo] = useState(null)
+    const [showEmoji, setShowEmoji] = useState(null)
     const [uploadingImg, setUploadingImg] = useState(false)
     const bottomRef = useRef(null)
     const inputRef = useRef(null)
 
-    useEffect(() => {
-        init()
-    }, [])
-
-    useEffect(() => {
-        bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-    }, [messages])
+    useEffect(() => { init() }, [])
+    useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
 
     const init = async () => {
         const { data: { user } } = await supabase.auth.getUser()
         if (user) {
-            const { data } = await supabase
-                .from('applications')
-                .select('*')
-                .eq('email', user.email)
-                .eq('status', 'approved')
-                .single()
+            const { data } = await supabase.from('applications').select('*').eq('email', user.email).eq('status', 'approved').single()
             if (data) setArtist(data)
         }
-
-        const { data: msgs } = await supabase
-            .from('messages')
-            .select('*')
-            .order('created_at', { ascending: true })
-            .limit(100)
+        const { data: msgs } = await supabase.from('messages').select('*').order('created_at', { ascending: true }).limit(100)
         if (msgs) setMessages(msgs)
         setLoading(false)
 
-        const channel = supabase
-            .channel('chat-room')
+        const channel = supabase.channel('chat-room')
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' },
-                payload => setMessages(prev => {
-                    if (prev.find(m => m.id === payload.new.id)) return prev
-                    return [...prev, payload.new]
-                })
-            )
+                p => setMessages(prev => prev.find(m => m.id === p.new.id) ? prev : [...prev, p.new]))
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' },
-                payload => setMessages(prev => prev.map(m => m.id === payload.new.id ? payload.new : m))
-            )
+                p => setMessages(prev => prev.map(m => m.id === p.new.id ? p.new : m)))
             .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'messages' },
-                payload => setMessages(prev => prev.filter(m => m.id !== payload.old.id))
-            )
+                p => setMessages(prev => prev.filter(m => m.id !== p.old.id)))
             .subscribe()
 
         return () => supabase.removeChannel(channel)
@@ -71,7 +53,10 @@ export default function ChatPage() {
             artist_username: artist.username,
             artist_name: artist.name,
             message: text,
+            reply_to: replyTo?.id || null,
+            reply_preview: replyTo ? `${replyTo.artist_name}: ${replyTo.message.substring(0, 50)}` : null,
         })
+        setReplyTo(null)
         setSending(false)
         inputRef.current?.focus()
     }
@@ -80,16 +65,22 @@ export default function ChatPage() {
         await supabase.from('messages').delete().eq('id', id)
     }
 
-    const startEdit = (msg) => {
-        setEditingId(msg.id)
-        setEditText(msg.message)
-    }
-
     const saveEdit = async (id) => {
         if (!editText.trim()) return
         await supabase.from('messages').update({ message: editText.trim(), edited: true }).eq('id', id)
         setEditingId(null)
-        setEditText('')
+    }
+
+    const addReaction = async (msg, emoji) => {
+        const reactions = msg.reactions || {}
+        const users = reactions[emoji] || []
+        const username = artist?.username
+        if (!username) return
+        const newUsers = users.includes(username) ? users.filter(u => u !== username) : [...users, username]
+        const newReactions = { ...reactions, [emoji]: newUsers }
+        if (newReactions[emoji].length === 0) delete newReactions[emoji]
+        await supabase.from('messages').update({ reactions: newReactions }).eq('id', msg.id)
+        setShowEmoji(null)
     }
 
     const sendImage = async (e) => {
@@ -136,7 +127,7 @@ export default function ChatPage() {
                     </p>
                 </div>
 
-                <div className="flex-1 overflow-y-auto rounded-sm p-4 space-y-3 mb-4"
+                <div className="flex-1 overflow-y-auto rounded-sm p-4 space-y-2 mb-4"
                     style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', minHeight: 0 }}>
 
                     {loading ? (
@@ -156,10 +147,11 @@ export default function ChatPage() {
                         const prev = messages[i - 1]
                         const showName = !prev || prev.artist_username !== msg.artist_username
                         const isEditing = editingId === msg.id
+                        const reactions = msg.reactions || {}
 
                         return (
                             <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} group`}>
-                                <div style={{ maxWidth: '75%' }}>
+                                <div style={{ maxWidth: '80%' }}>
                                     {showName && !isMe && (
                                         <div className="flex items-center gap-2 mb-1 ml-1">
                                             <a href={`/artist/${msg.artist_username}`} className="text-xs tracking-wider" style={{ color }}>
@@ -169,19 +161,26 @@ export default function ChatPage() {
                                         </div>
                                     )}
 
+                                    {/* Reply preview */}
+                                    {msg.reply_preview && (
+                                        <div className="rounded-sm px-3 py-1.5 mb-1 ml-1"
+                                            style={{ background: 'rgba(255,255,255,0.06)', borderLeft: '2px solid rgba(0,229,255,0.4)' }}>
+                                            <p className="text-xs" style={{ color: 'rgba(234,230,242,0.4)' }}>↩ {msg.reply_preview}</p>
+                                        </div>
+                                    )}
+
                                     <div className="rounded-sm px-4 py-2.5 relative"
                                         style={{
                                             background: isMe ? `${color}15` : 'rgba(255,255,255,0.04)',
                                             border: `1px solid ${isMe ? `${color}30` : 'rgba(255,255,255,0.06)'}`,
                                         }}>
 
-                                        {/* Image */}
                                         {msg.image_url && (
-                                            <img src={msg.image_url} alt="shared" className="rounded-sm mb-2 max-w-full"
-                                                style={{ maxHeight: '200px', objectFit: 'contain' }} />
+                                            <img src={msg.image_url} alt="shared" className="rounded-sm mb-2 max-w-full cursor-pointer"
+                                                style={{ maxHeight: '200px', objectFit: 'contain' }}
+                                                onClick={() => window.open(msg.image_url, '_blank')} />
                                         )}
 
-                                        {/* Message or edit input */}
                                         {isEditing ? (
                                             <div className="flex gap-2 items-center">
                                                 <input value={editText} onChange={e => setEditText(e.target.value)}
@@ -195,21 +194,73 @@ export default function ChatPage() {
                                         )}
 
                                         {msg.edited && !isEditing && (
-                                            <p className="text-xs mt-1" style={{ color: 'rgba(234,230,242,0.2)' }}>edited</p>
+                                            <p className="text-xs mt-0.5" style={{ color: 'rgba(234,230,242,0.2)' }}>edited</p>
                                         )}
                                     </div>
 
-                                    {/* Actions — only for own messages */}
-                                    {isMe && !isEditing && (
-                                        <div className="flex gap-2 justify-end mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button onClick={() => startEdit(msg)} className="text-xs flex items-center gap-1"
-                                                style={{ color: 'rgba(234,230,242,0.3)' }}>
-                                                <Edit2 size={11} /> Edit
+                                    {/* Reactions display */}
+                                    {Object.keys(reactions).length > 0 && (
+                                        <div className="flex flex-wrap gap-1 mt-1 ml-1">
+                                            {Object.entries(reactions).map(([emoji, users]) => (
+                                                users.length > 0 && (
+                                                    <button key={emoji} onClick={() => artist && addReaction(msg, emoji)}
+                                                        className="text-xs px-2 py-0.5 rounded-full transition-all"
+                                                        style={{
+                                                            background: users.includes(artist?.username) ? 'rgba(0,229,255,0.15)' : 'rgba(255,255,255,0.06)',
+                                                            border: users.includes(artist?.username) ? '1px solid rgba(0,229,255,0.3)' : '1px solid rgba(255,255,255,0.1)',
+                                                        }}>
+                                                        {emoji} {users.length}
+                                                    </button>
+                                                )
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* Action buttons on hover */}
+                                    {artist && !isEditing && (
+                                        <div className={`flex gap-2 mt-1 opacity-0 group-hover:opacity-100 transition-opacity ${isMe ? 'justify-end' : 'justify-start ml-1'}`}>
+                                            {/* Reply */}
+                                            <button onClick={() => setReplyTo(msg)} className="text-xs flex items-center gap-1 px-2 py-0.5 rounded-sm"
+                                                style={{ color: 'rgba(234,230,242,0.4)', background: 'rgba(255,255,255,0.05)' }}>
+                                                <Reply size={10} /> Reply
                                             </button>
-                                            <button onClick={() => deleteMessage(msg.id)} className="text-xs flex items-center gap-1"
-                                                style={{ color: 'rgba(255,68,68,0.5)' }}>
-                                                <Trash2 size={11} /> Delete
-                                            </button>
+                                            {/* React */}
+                                            <div className="relative">
+                                                <button onClick={() => setShowEmoji(showEmoji === msg.id ? null : msg.id)}
+                                                    className="text-xs flex items-center gap-1 px-2 py-0.5 rounded-sm"
+                                                    style={{ color: 'rgba(234,230,242,0.4)', background: 'rgba(255,255,255,0.05)' }}>
+                                                    <Smile size={10} /> React
+                                                </button>
+                                                {/* Emoji picker */}
+                                                {showEmoji === msg.id && (
+                                                    <div className="absolute bottom-8 left-0 z-50 p-2 rounded-sm shadow-xl"
+                                                        style={{ background: '#0A0A18', border: '1px solid rgba(255,255,255,0.1)', width: '220px' }}>
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {EMOJI_LIST.map(emoji => (
+                                                                <button key={emoji} onClick={() => addReaction(msg, emoji)}
+                                                                    className="text-lg hover:scale-125 transition-transform p-0.5">
+                                                                    {emoji}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            {/* Edit/Delete only for own messages */}
+                                            {isMe && (
+                                                <>
+                                                    <button onClick={() => { setEditingId(msg.id); setEditText(msg.message) }}
+                                                        className="text-xs flex items-center gap-1 px-2 py-0.5 rounded-sm"
+                                                        style={{ color: 'rgba(234,230,242,0.4)', background: 'rgba(255,255,255,0.05)' }}>
+                                                        <Edit2 size={10} /> Edit
+                                                    </button>
+                                                    <button onClick={() => deleteMessage(msg.id)}
+                                                        className="text-xs flex items-center gap-1 px-2 py-0.5 rounded-sm"
+                                                        style={{ color: 'rgba(255,68,68,0.5)', background: 'rgba(255,68,68,0.08)' }}>
+                                                        <Trash2 size={10} /> Delete
+                                                    </button>
+                                                </>
+                                            )}
                                         </div>
                                     )}
 
@@ -225,17 +276,26 @@ export default function ChatPage() {
                     <div ref={bottomRef} />
                 </div>
 
+                {/* Reply preview */}
+                {replyTo && (
+                    <div className="flex items-center justify-between px-3 py-2 mb-2 rounded-sm flex-shrink-0"
+                        style={{ background: 'rgba(0,229,255,0.06)', border: '1px solid rgba(0,229,255,0.2)', borderLeft: '3px solid var(--cyan)' }}>
+                        <div>
+                            <p className="text-xs" style={{ color: 'var(--cyan)' }}>↩ Replying to {replyTo.artist_name}</p>
+                            <p className="text-xs mt-0.5" style={{ color: 'rgba(234,230,242,0.4)' }}>{replyTo.message.substring(0, 60)}</p>
+                        </div>
+                        <button onClick={() => setReplyTo(null)} style={{ color: 'rgba(234,230,242,0.4)' }}><X size={14} /></button>
+                    </div>
+                )}
+
                 {/* Input */}
                 <div className="pb-6 flex-shrink-0">
                     {artist ? (
                         <div className="flex gap-2">
-                            {/* Image upload */}
-                            <label className="btn-velvet px-3 cursor-pointer flex-shrink-0"
-                                style={{ opacity: uploadingImg ? 0.5 : 1 }}>
+                            <label className="btn-velvet px-3 cursor-pointer flex-shrink-0" style={{ opacity: uploadingImg ? 0.5 : 1 }}>
                                 <Image size={16} />
                                 <input type="file" className="hidden" accept="image/*" onChange={sendImage} disabled={uploadingImg} />
                             </label>
-
                             <input ref={inputRef} type="text"
                                 placeholder="Share your thoughts... (Enter to send)"
                                 value={newMsg}

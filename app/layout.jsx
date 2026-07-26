@@ -42,6 +42,7 @@ export default function RootLayout({ children }) {
               <a href="/artists" className="nav-link">Artists</a>
               <a href="/streaks" className="nav-link">Streaks</a>
               <a href="/chat" className="nav-link">Chat</a>
+              <a href="/dm" className="nav-link">DMs</a>
               <a href="/sanctuary" className="nav-link">Sanctuary</a>
             </div>
             <div className="flex items-center gap-3">
@@ -70,7 +71,7 @@ export default function RootLayout({ children }) {
             <div>
               <p className="text-ghost/20 uppercase tracking-widest text-xs mb-4">Navigate</p>
               <div className="flex flex-col gap-2">
-                {['Gallery', 'Artists', 'Streaks', 'Chat', 'Sanctuary'].map((item) => (
+                {['Gallery', 'Artists', 'Streaks', 'Chat', 'DMs', 'Sanctuary'].map((item) => (
                   <a key={item} href={`/${item.toLowerCase()}`} className="footer-link">{item}</a>
                 ))}
               </div>
@@ -86,7 +87,7 @@ export default function RootLayout({ children }) {
           </div>
           <div className="border-t border-white/5 py-5 text-center">
             <p className="text-ghost/20 text-xs tracking-widest uppercase">
-              2025 AETHRIX. Built in reverence for the art.
+              2025 AETHRIX · Built by Sadaf · Founder, AETHRIX
             </p>
           </div>
         </footer>

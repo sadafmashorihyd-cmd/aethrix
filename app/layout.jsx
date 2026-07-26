@@ -23,7 +23,7 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
       </head>
-      <body className="bg-void text-ghost antialiased min-h-screen overflow-x-hidden">
+      <body className="bg-void text-ghost antialiased min-h-screen" id="root-body">
         <div className="fixed inset-0 pointer-events-none z-0" aria-hidden="true">
           <div className="ambient-orb ambient-orb--cyan" />
           <div className="ambient-orb ambient-orb--violet" />
@@ -48,24 +48,23 @@ export default function RootLayout({ children }) {
             <div className="flex items-center gap-3">
               <a href="/dashboard" className="nav-link hidden sm:block">Dashboard</a>
               <a href="/login" className="nav-link hidden sm:block">Sign In</a>
-              <a href="/apply" className="btn-velvet text-xs px-3 py-2 md:px-5 md:py-2.5">
-                Apply
-              </a>
+              <a href="/apply" className="btn-velvet text-xs px-3 py-2 md:px-5 md:py-2.5">Apply</a>
             </div>
           </nav>
         </header>
 
-        <main className="relative z-10">{children}</main>
+        <div id="page-content" className="relative z-10">
+          {children}
+        </div>
 
-        <footer className="relative z-10 border-t border-white/5 mt-24">
+        <footer id="site-footer" className="relative z-10 border-t border-white/5 mt-24">
           <div className="max-w-7xl mx-auto px-4 md:px-8 py-12 grid grid-cols-1 sm:grid-cols-3 gap-10">
             <div>
               <p className="font-display text-2xl text-ghost font-light mb-3">
                 AE<span className="text-cyan">THRIX</span>
               </p>
               <p className="text-ghost/40 text-sm leading-relaxed">
-                A sacred digital sanctuary built by artists, for artists.
-                No algorithms. No noise. Only truth.
+                A sacred digital sanctuary built by artists, for artists. No algorithms. No noise. Only truth.
               </p>
             </div>
             <div>

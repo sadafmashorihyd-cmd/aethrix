@@ -68,8 +68,8 @@ export default function ArtistsPage() {
                   className="tenet-card block" style={{ textDecoration: 'none' }}>
                   <div className="w-16 h-16 rounded-full mb-4 flex items-center justify-center overflow-hidden"
                     style={{ background: `${color}15`, border: `1px solid ${color}30` }}>
-                    {artist.image_url ? (
-                      <img src={artist.image_url} alt={artist.name} className="w-full h-full object-cover" />
+                    {(artist.profile_pic || artist.image_url) ? (
+                    <img src={artist.profile_pic || artist.image_url} alt={artist.name} className="w-full h-full object-cover" />
                     ) : (
                       <Feather size={16} style={{ color, opacity: 0.7 }} strokeWidth={1.5} />
                     )}

@@ -94,7 +94,7 @@ function DMContent() {
             const found = all.find(a => a.username === urlUser)
             if (found) setSelectedUser(found)
         }
-        supabase.channel('dm-v3')
+        supabase.channel('dm-v4-' + Math.random())
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'direct_messages' },
                 p => {
                     const msg = p.new

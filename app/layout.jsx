@@ -1,5 +1,6 @@
 import { Inter } from 'next/font/google'
 import './globals.css'
+import NotificationBell from '../components/NotificationBell'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -45,13 +46,8 @@ export default function RootLayout({ children }) {
               <a href="/dm" className="nav-link">DMs</a>
               <a href="/sanctuary" className="nav-link">Sanctuary</a>
             </div>
-            <div className="flex items-center gap-3">
-              <a href="/notifications" className="nav-link hidden sm:flex items-center gap-1 relative">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                </svg>
-              </a>
+            <div className="flex items-center gap-4">
+              <NotificationBell />
               <a href="/dashboard" className="nav-link hidden sm:block">Dashboard</a>
               <a href="/login" className="nav-link hidden sm:block">Sign In</a>
               <a href="/apply" className="btn-velvet text-xs px-3 py-2 md:px-5 md:py-2.5">Apply</a>

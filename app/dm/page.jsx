@@ -145,6 +145,12 @@ function DMContent() {
             message: text,
         })
         if (error) console.error(error)
+        await supabase.from('notifications').insert({
+            username: selectedUser.username,
+            type: 'dm',
+            message: `${artist.name} sent you a message: "${text.substring(0, 40)}"`,
+            link: `/dm?user=${artist.username}`,
+        })
         setSending(false)
         setTimeout(() => inputRef.current?.focus(), 50)
     }

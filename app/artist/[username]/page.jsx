@@ -1,24 +1,31 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { Feather, Instagram, Twitter, Linkedin, Globe, Facebook, Upload, Check, Plus, Lock, X } from 'lucide-react'
+import { Feather, Instagram, Twitter, Linkedin, Globe, Facebook, Upload, Check, Plus, Lock, X, Trash2 } from 'lucide-react'
 import { supabase } from '../../../lib/supabase'
 
 const MOODS = ['Midnight Rain', 'Melancholy', 'Sunset', 'Cyberpunk', 'Wildfire', 'Deep Ocean']
 
-function WorkCard({ work, onOpen }) {
+function WorkCard({ work, onOpen, onDelete, isOwner }) {
   const [hovered, setHovered] = useState(false)
-  const moodColor = '#00E5FF'
   return (
-    <div className="artwork-card" onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
-      onClick={() => onOpen(work)}>
-      <div className="w-full relative overflow-hidden" style={{ minHeight: '200px', cursor: 'pointer' }}>
+    <div className="artwork-card" onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+      <div className="w-full relative overflow-hidden" style={{ minHeight: '200px', cursor: 'pointer' }}
+        onClick={() => onOpen(work)}>
         <img src={work.image_url} alt={work.title || 'Artwork'} className="w-full object-cover"
           style={{ transform: hovered ? 'scale(1.04)' : 'scale(1)', transition: 'transform 0.6s ease' }} />
       </div>
       <div className="artwork-card-overlay">
-        <p className="text-xs tracking-widest uppercase mb-1" style={{ color: moodColor, opacity: 0.7 }}>{work.mood}</p>
+        <p className="text-xs tracking-widest uppercase mb-1" style={{ color: '#00F0FF', opacity: 0.7 }}>{work.mood}</p>
         <p className="font-display text-lg font-light" style={{ color: 'var(--ghost)' }}>{work.title || work.medium}</p>
       </div>
+      {/* Delete button — only for owner, only for uploaded works (not main submission) */}
+      {isOwner && work.id !== 'main' && hovered && (
+        <button onClick={(e) => { e.stopPropagation(); onDelete(work.id) }}
+          className="absolute top-3 right-3 z-10 flex items-center gap-1 px-2 py-1 rounded-sm text-xs"
+          style={{ background: 'rgba(255,68,68,0.85)', color: 'white', border: 'none', cursor: 'pointer' }}>
+          <Trash2 size={11} /> Delete
+        </button>
+      )}
     </div>
   )
 }
@@ -27,23 +34,17 @@ function Lightbox({ work, onClose }) {
   if (!work) return null
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(3,3,10,0.95)' }} onClick={onClose}>
-      <button className="absolute top-6 right-6 text-white opacity-60 hover:opacity-100"
-        style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: 40, height: 40, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      style={{ background: 'rgba(3,3,10,0.96)' }} onClick={onClose}>
+      <button className="absolute top-6 right-6"
+        style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: 40, height: 40, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
         <X size={20} />
       </button>
-      <div onClick={e => e.stopPropagation()} className="max-w-4xl max-h-screen w-full">
+      <div onClick={e => e.stopPropagation()} className="max-w-4xl w-full">
         <img src={work.image_url} alt={work.title} className="w-full h-auto rounded-sm object-contain"
           style={{ maxHeight: '80vh' }} />
         <div className="mt-4 text-center">
-          <p className="font-display text-xl font-light" style={{ color: 'var(--ghost)' }}>
-            {work.title || 'Untitled'}
-          </p>
-          {work.mood && (
-            <p className="text-xs mt-1 tracking-widest uppercase" style={{ color: 'var(--cyan)', opacity: 0.6 }}>
-              {work.mood} · {work.medium}
-            </p>
-          )}
+          <p className="font-display text-xl font-light" style={{ color: 'var(--ghost)' }}>{work.title || 'Untitled'}</p>
+          {work.mood && <p className="text-xs mt-1 tracking-widest uppercase" style={{ color: 'var(--cyan)', opacity: 0.6 }}>{work.mood} · {work.medium}</p>}
         </div>
       </div>
     </div>
@@ -118,6 +119,12 @@ export default function ArtistChamberPage({ params }) {
     setUploading(false)
   }
 
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this artwork?')) return
+    await supabase.from('artworks').delete().eq('id', id)
+    fetchArtworks()
+  }
+
   const SOCIAL_LINKS = [
     { key: 'instagram', label: 'Instagram', icon: Instagram, color: '#E1306C', prefix: 'https://instagram.com/' },
     { key: 'twitter', label: 'Twitter', icon: Twitter, color: '#1DA1F2', prefix: 'https://twitter.com/' },
@@ -138,6 +145,8 @@ export default function ArtistChamberPage({ params }) {
     </div>
   )
 
+  // Profile pic is separate from artwork
+  const profilePic = artist.profile_pic || null
   const allWorks = [
     ...(artist.image_url ? [{ id: 'main', image_url: artist.image_url, title: 'Original Submission', medium: artist.medium, mood: artist.mood }] : []),
     ...artworks
@@ -150,14 +159,14 @@ export default function ArtistChamberPage({ params }) {
       <div className="max-w-7xl mx-auto px-4 md:px-8 mb-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
           <div className="lg:col-span-2">
-            {/* Profile pic */}
+            {/* Profile pic — from profile_pic column */}
             <div className="w-24 h-24 rounded-full mb-6 overflow-hidden flex-shrink-0"
-              style={{ border: '2px solid rgba(0,229,255,0.3)' }}>
-              {artist.image_url ? (
-                <img src={artist.image_url} alt={artist.name} className="w-full h-full object-cover" />
+              style={{ border: '2px solid rgba(0,240,255,0.35)' }}>
+              {profilePic ? (
+                <img src={profilePic} alt={artist.name} className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center" style={{ background: 'rgba(0,229,255,0.1)' }}>
-                  <Feather size={28} style={{ color: 'var(--cyan)', opacity: 0.5 }} strokeWidth={1.5} />
+                <div className="w-full h-full flex items-center justify-center" style={{ background: 'rgba(0,240,255,0.1)' }}>
+                  <span className="font-display text-3xl font-light" style={{ color: 'var(--cyan)' }}>{artist.name?.[0]}</span>
                 </div>
               )}
             </div>
@@ -171,22 +180,19 @@ export default function ArtistChamberPage({ params }) {
             </p>
             {artist.bio && (
               <p className="font-display text-lg font-light italic leading-relaxed max-w-xl mb-8"
-                style={{ color: 'rgba(234,230,242,0.45)' }}>
+                style={{ color: 'rgba(234,230,242,0.50)' }}>
                 "{artist.bio}"
               </p>
             )}
-            {/* Social Links */}
             <div className="flex flex-wrap gap-3 mb-8">
               {SOCIAL_LINKS.map(social => {
                 const Icon = social.icon
                 const handle = artist[social.key]
                 if (!handle) return null
                 return (
-                  <a key={social.key}
-                    href={`${social.prefix}${handle}`}
+                  <a key={social.key} href={`${social.prefix}${handle}`}
                     target="_blank" rel="noopener noreferrer"
-                    className="btn-velvet"
-                    style={{ borderColor: `${social.color}40`, color: social.color }}>
+                    className="btn-velvet" style={{ borderColor: `${social.color}40`, color: social.color }}>
                     <Icon size={13} /><span>{social.label}</span>
                   </a>
                 )
@@ -194,7 +200,6 @@ export default function ArtistChamberPage({ params }) {
             </div>
           </div>
 
-          {/* Stats */}
           <div className="space-y-4">
             <div className="tenet-card">
               <p className="section-label">Artist Info</p>
@@ -215,17 +220,13 @@ export default function ArtistChamberPage({ params }) {
             </div>
             {streak && (
               <div className="tenet-card text-center"
-                style={{ border: '1px solid rgba(255,107,53,0.2)', background: 'rgba(255,107,53,0.04)' }}>
+                style={{ border: '1px solid rgba(255,107,53,0.25)', background: 'rgba(255,107,53,0.05)' }}>
                 <p className="text-xs tracking-widest uppercase mb-2" style={{ color: 'rgba(234,230,242,0.3)' }}>🔥 Streak</p>
                 <p className="font-display font-light" style={{ fontSize: '3.5rem', color: 'var(--ember)', lineHeight: 1 }}>
                   {streak.current_streak}
                 </p>
-                <p className="text-xs mt-1" style={{ color: 'rgba(234,230,242,0.3)' }}>
-                  days · {streak.total_uploads} uploads
-                </p>
-                <a href="/streaks" className="text-xs mt-3 block" style={{ color: 'var(--ember)', opacity: 0.7 }}>
-                  View Leaderboard →
-                </a>
+                <p className="text-xs mt-1" style={{ color: 'rgba(234,230,242,0.3)' }}>days · {streak.total_uploads} uploads</p>
+                <a href="/streaks" className="text-xs mt-3 block" style={{ color: 'var(--ember)', opacity: 0.7 }}>View Leaderboard →</a>
               </div>
             )}
           </div>
@@ -251,9 +252,8 @@ export default function ArtistChamberPage({ params }) {
           )}
         </div>
 
-        {/* Upload Form */}
         {showUpload && isOwner && (
-          <div className="rounded-sm p-6 mb-8" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(0,229,255,0.15)' }}>
+          <div className="rounded-sm p-6 mb-8" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(0,240,255,0.18)' }}>
             <h3 className="font-display text-2xl font-light mb-5" style={{ color: 'var(--ghost)' }}>Upload New Artwork</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
               <div>
@@ -273,7 +273,7 @@ export default function ArtistChamberPage({ params }) {
                 {MOODS.map(m => (
                   <button key={m} type="button" onClick={() => setUploadForm({ ...uploadForm, mood: m })}
                     className="mood-badge"
-                    style={uploadForm.mood === m ? { color: 'var(--cyan)', borderColor: 'var(--cyan)', background: 'rgba(0,229,255,0.08)' } : {}}>
+                    style={uploadForm.mood === m ? { color: 'var(--cyan)', borderColor: 'var(--cyan)', background: 'rgba(0,240,255,0.08)' } : {}}>
                     {m}
                   </button>
                 ))}
@@ -281,7 +281,7 @@ export default function ArtistChamberPage({ params }) {
             </div>
             <div className="mb-5">
               <div className="rounded-sm p-6 text-center cursor-pointer"
-                style={{ border: '2px dashed rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.02)' }}
+                style={{ border: '2px dashed rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.02)' }}
                 onClick={() => document.getElementById('artwork-upload').click()}>
                 <input id="artwork-upload" type="file" className="hidden" accept="image/*"
                   onChange={e => setUploadFile(e.target.files[0])} />
@@ -305,7 +305,6 @@ export default function ArtistChamberPage({ params }) {
           </div>
         )}
 
-        {/* Gallery with lightbox */}
         {allWorks.length === 0 ? (
           <div className="text-center py-20">
             <Feather size={32} className="mx-auto mb-4 opacity-20" strokeWidth={0.8} />
@@ -314,7 +313,10 @@ export default function ArtistChamberPage({ params }) {
         ) : (
           <div className="masonry-grid">
             {allWorks.map(work => (
-              <WorkCard key={work.id} work={work} onOpen={setLightboxWork} />
+              <WorkCard key={work.id} work={work}
+                onOpen={setLightboxWork}
+                onDelete={handleDelete}
+                isOwner={isOwner} />
             ))}
           </div>
         )}

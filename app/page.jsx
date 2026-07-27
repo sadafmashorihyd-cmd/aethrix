@@ -3,22 +3,6 @@ import { useEffect, useRef, useState } from 'react'
 import { ArrowRight, Feather, EyeOff, Fingerprint, Sparkles, Lock, Infinity } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
-function InkDrop() {
-  return (
-    <div className="ink-drop-container">
-      <div className="ink-drop-ring" />
-      <div className="ink-drop-ring ink-drop-ring--2" />
-      <div className="ink-drop ink-drop--1" />
-      <div className="ink-drop ink-drop--2" />
-      <div className="ink-drop ink-drop--3" />
-      <div className="absolute inset-0 flex items-center justify-center">
-        <Feather size={44} strokeWidth={0.75}
-          style={{ color: 'var(--ghost)', opacity: 0.65, filter: 'drop-shadow(0 0 18px rgba(0,229,255,0.55))' }} />
-      </div>
-    </div>
-  )
-}
-
 function ScrollReveal({ children, delay = 0, className = '' }) {
   const ref = useRef(null)
   const [visible, setVisible] = useState(false)
@@ -39,25 +23,38 @@ function ScrollReveal({ children, delay = 0, className = '' }) {
 }
 
 const TENETS = [
-  { icon: EyeOff, title: 'Zero Algorithm Noise', body: 'Your work is seen because it deserves to be — not because you paid or posted at the right hour.', color: 'var(--cyan)', num: '01' },
-  { icon: Lock, title: 'The Velvet Rope', body: 'Every artist here earned their Passport. No brands, no bots, no noise. Only hands that carry ink.', color: 'var(--violet)', num: '02' },
-  { icon: Sparkles, title: 'Mood-Match Discovery', body: 'Browse by feeling, not follower count. Find art that mirrors your exact state of mind at midnight.', color: 'var(--ember)', num: '03' },
-  { icon: Fingerprint, title: 'Your Artist Chamber', body: 'A custom portfolio page that carries your name like a permanent exhibition — not a feed, a gallery.', color: 'var(--cyan)', num: '04' },
-  { icon: Infinity, title: 'The Infinite Canvas', body: 'A living, breathing gallery. Every visit, a new constellation of masterpieces waiting to be found.', color: 'var(--violet)', num: '05' },
-  { icon: Feather, title: 'Pure Expression', body: 'No like counts. No toxic metrics. The work speaks, and the right eyes will always find the right art.', color: 'var(--ember)', num: '06' },
+  { icon: EyeOff,      title: 'Zero Algorithm Noise',  body: 'Your work is seen because it deserves to be — not because you paid or posted at the right hour.',   color: 'var(--cyan)',   num: '01' },
+  { icon: Lock,        title: 'The Velvet Rope',        body: 'Every artist here earned their Passport. No brands, no bots, no noise. Only hands that carry ink.',   color: 'var(--violet)', num: '02' },
+  { icon: Sparkles,    title: 'Mood-Match Discovery',   body: 'Browse by feeling, not follower count. Find art that mirrors your exact state of mind at midnight.',  color: 'var(--ember)',  num: '03' },
+  { icon: Fingerprint, title: 'Your Artist Chamber',    body: 'A custom portfolio page that carries your name like a permanent exhibition — not a feed, a gallery.', color: 'var(--cyan)',   num: '04' },
+  { icon: Infinity,    title: 'The Infinite Canvas',    body: 'A living, breathing gallery. Every visit, a new constellation of masterpieces waiting to be found.',  color: 'var(--violet)', num: '05' },
+  { icon: Feather,     title: 'Pure Expression',        body: 'No like counts. No toxic metrics. The work speaks, and the right eyes will always find the right art.',color: 'var(--ember)',  num: '06' },
 ]
 
+const MOOD_COLORS = {
+  'Midnight Rain': '#00E5FF',
+  'Melancholy': '#B57BFF',
+  'Sunset': '#FF6B35',
+  'Cyberpunk': '#00E5FF',
+  'Wildfire': '#FF4444',
+  'Deep Ocean': '#00B8D4',
+}
+
 export default function HomePage() {
-  const [cursor, setCursor] = useState({ x: 0, y: 0 })
+  const [artworks, setArtworks] = useState([])
   const [previews, setPreviews] = useState([])
 
   useEffect(() => {
-    const h = (e) => setCursor({ x: e.clientX, y: e.clientY })
-    window.addEventListener('mousemove', h)
-    return () => window.removeEventListener('mousemove', h)
-  }, [])
+    // Fetch hero collage artworks
+    supabase
+      .from('applications')
+      .select('*')
+      .eq('status', 'approved')
+      .not('image_url', 'is', null)
+      .limit(6)
+      .then(({ data }) => { if (data) setArtworks(data) })
 
-  useEffect(() => {
+    // Fetch gallery preview
     supabase
       .from('applications')
       .select('*')
@@ -69,18 +66,13 @@ export default function HomePage() {
 
   return (
     <div className="page-enter">
-      {/* Cursor glow */}
-      <div className="fixed pointer-events-none z-20 rounded-full" style={{
-        left: cursor.x - 180, top: cursor.y - 180,
-        width: 360, height: 360,
-        background: 'radial-gradient(circle, rgba(0,229,255,0.05) 0%, transparent 70%)',
-        transition: 'left 0.12s ease, top 0.12s ease',
-      }} />
 
       {/* HERO */}
       <section className="hero-section">
         <div className="max-w-7xl mx-auto w-full px-4 md:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+            
+            {/* Left — Text */}
             <div>
               <div className="hero-eyebrow fade-up">A Sacred Digital Sanctuary</div>
               <h1 className="hero-title fade-up d1 mb-4">
@@ -111,11 +103,93 @@ export default function HomePage() {
                 </div>
               </div>
             </div>
-            <div className="flex justify-center fade-up d2">
-              <InkDrop />
+
+            {/* Right — Artwork Collage */}
+            <div className="fade-up d2">
+              {artworks.length > 0 ? (
+                <div style={{ position: 'relative', height: '480px' }}>
+                  {/* Main large artwork */}
+                  <div style={{
+                    position: 'absolute', top: 0, left: '10%', width: '55%', height: '65%',
+                    borderRadius: 12, overflow: 'hidden',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+                    transform: 'rotate(-2deg)',
+                    zIndex: 3,
+                  }}>
+                    {artworks[0] && <img src={artworks[0].image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px', background: 'linear-gradient(transparent, rgba(0,0,0,0.8))' }}>
+                      <p style={{ color: 'rgba(234,230,242,0.9)', fontSize: 12, margin: 0 }}>{artworks[0]?.name}</p>
+                      <p style={{ color: MOOD_COLORS[artworks[0]?.mood] || '#00E5FF', fontSize: 10, margin: '2px 0 0', opacity: 0.8 }}>{artworks[0]?.mood}</p>
+                    </div>
+                  </div>
+
+                  {/* Second artwork */}
+                  <div style={{
+                    position: 'absolute', top: '15%', right: 0, width: '45%', height: '55%',
+                    borderRadius: 12, overflow: 'hidden',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+                    transform: 'rotate(1.5deg)',
+                    zIndex: 2,
+                  }}>
+                    {artworks[1] && <img src={artworks[1].image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px', background: 'linear-gradient(transparent, rgba(0,0,0,0.8))' }}>
+                      <p style={{ color: 'rgba(234,230,242,0.9)', fontSize: 12, margin: 0 }}>{artworks[1]?.name}</p>
+                    </div>
+                  </div>
+
+                  {/* Third artwork — bottom left */}
+                  <div style={{
+                    position: 'absolute', bottom: 0, left: 0, width: '42%', height: '42%',
+                    borderRadius: 12, overflow: 'hidden',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+                    transform: 'rotate(2deg)',
+                    zIndex: 4,
+                  }}>
+                    {artworks[2] && <img src={artworks[2].image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                  </div>
+
+                  {/* Fourth artwork — bottom right */}
+                  {artworks[3] && (
+                    <div style={{
+                      position: 'absolute', bottom: '5%', right: '5%', width: '35%', height: '35%',
+                      borderRadius: 12, overflow: 'hidden',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+                      transform: 'rotate(-1deg)',
+                      zIndex: 1,
+                    }}>
+                      <img src={artworks[3].image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                  )}
+
+                  {/* Glow overlay */}
+                  <div style={{
+                    position: 'absolute', inset: 0, zIndex: 0,
+                    background: 'radial-gradient(circle at 50% 50%, rgba(0,229,255,0.08), transparent 70%)',
+                    pointerEvents: 'none',
+                  }} />
+                </div>
+              ) : (
+                // Fallback — glowing orb if no artworks yet
+                <div className="ink-drop-container">
+                  <div className="ink-drop-ring" />
+                  <div className="ink-drop-ring ink-drop-ring--2" />
+                  <div className="ink-drop ink-drop--1" />
+                  <div className="ink-drop ink-drop--2" />
+                  <div className="ink-drop ink-drop--3" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Feather size={44} strokeWidth={0.75}
+                      style={{ color: 'var(--ghost)', opacity: 0.65, filter: 'drop-shadow(0 0 18px rgba(0,229,255,0.55))' }} />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
+
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-25">
           <div className="w-px h-10" style={{ background: 'linear-gradient(to bottom, var(--cyan), transparent)', animation: 'breathe 2s ease-in-out infinite' }} />
           <p className="text-xs tracking-widest uppercase" style={{ color: 'var(--ghost-dim)' }}>Descend</p>
@@ -129,9 +203,9 @@ export default function HomePage() {
           <div className="space-y-4 md:space-y-6">
             {[
               { text: 'Your art was never meant', italic: false },
-              { text: 'to chase an algorithm.', italic: true, color: 'var(--cyan)' },
-              { text: 'It was meant to', italic: false },
-              { text: "stop someone's heart.", italic: true, color: 'var(--ember)' },
+              { text: 'to chase an algorithm.',   italic: true,  color: 'var(--cyan)' },
+              { text: 'It was meant to',          italic: false },
+              { text: "stop someone's heart.",    italic: true,  color: 'var(--ember)' },
             ].map((line, i) => (
               <ScrollReveal key={i} delay={i * 120}>
                 <p className="font-display font-light leading-[1.05]"
@@ -156,7 +230,7 @@ export default function HomePage() {
 
       <div className="glow-line max-w-7xl mx-auto px-4 md:px-8" />
 
-      {/* GALLERY PREVIEW - REAL DATA */}
+      {/* GALLERY PREVIEW */}
       <section className="py-20 px-4 md:px-8">
         <div className="max-w-7xl mx-auto">
           <ScrollReveal>
@@ -192,7 +266,7 @@ export default function HomePage() {
                     <div className="artwork-card-overlay">
                       <a href={`/artist/${art.username}`}
                         className="text-xs tracking-widest uppercase mb-1 block"
-                        style={{ color: 'var(--cyan)', opacity: 0.7 }}>
+                        style={{ color: MOOD_COLORS[art.mood] || 'var(--cyan)', opacity: 0.7 }}>
                         {art.name}
                       </a>
                       <p className="font-display text-lg font-light" style={{ color: 'var(--ghost)' }}>{art.medium}</p>

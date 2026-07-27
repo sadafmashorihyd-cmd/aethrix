@@ -48,7 +48,7 @@ export default function HomePage() {
     supabase
       .from('applications')
       .select('*')
-      .in('username', ['sadaf-art', 'florish_fusion', 'beenish-art', 'hamdanraza-art'])
+      .in('username', ['sadaf-art', 'florish_fusion', 'kahaf-art', 'nisha-art'])
       .not('image_url', 'is', null)
       .then(({ data }) => { if (data) setArtworks(data) })
 

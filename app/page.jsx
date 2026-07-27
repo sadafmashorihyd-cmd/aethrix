@@ -76,7 +76,7 @@ export default function HomePage() {
                 <div key={art.id} style={{ overflow: 'hidden', position: 'relative' }}>
                   <img src={art.image_url} alt="" style={{
                     width: '100%', height: '100%', objectFit: 'cover',
-                    filter: 'blur(8px) brightness(0.25) saturate(1.4)',
+                    filter: 'blur(12px) brightness(0.35) saturate(1.6)',
                     transform: 'scale(1.1)',
                   }} />
                 </div>

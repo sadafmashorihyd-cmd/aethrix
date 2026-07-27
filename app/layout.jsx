@@ -1,6 +1,8 @@
+'use client'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import NotificationBell from './components/NotificationBell'
+import { useState } from 'react'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -8,15 +10,55 @@ const inter = Inter({
   display: 'swap',
 })
 
-export const metadata = {
-  title: 'AETHRIX — Where Art Transcends',
-  description: "The world's first sacred digital sanctuary for true artists.",
+function MobileNav() {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      {/* Hamburger button */}
+      <button onClick={() => setOpen(!open)} className="md:hidden flex flex-col gap-1.5 p-2"
+        style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+        <span style={{ display: 'block', width: 22, height: 2, background: open ? 'var(--cyan)' : 'var(--ghost)', transition: 'all 0.3s', transform: open ? 'rotate(45deg) translate(3px, 3px)' : 'none' }} />
+        <span style={{ display: 'block', width: 22, height: 2, background: open ? 'transparent' : 'var(--ghost)', transition: 'all 0.3s', opacity: open ? 0 : 1 }} />
+        <span style={{ display: 'block', width: 22, height: 2, background: open ? 'var(--cyan)' : 'var(--ghost)', transition: 'all 0.3s', transform: open ? 'rotate(-45deg) translate(3px, -3px)' : 'none' }} />
+      </button>
+
+      {/* Mobile menu */}
+      {open && (
+        <div className="md:hidden fixed inset-0 z-40" style={{ top: 64 }}>
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(8,8,24,0.95)', backdropFilter: 'blur(20px)' }}
+            onClick={() => setOpen(false)} />
+          <div style={{ position: 'relative', zIndex: 1, padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: 24 }}>
+            {[
+              { href: '/gallery', label: 'Gallery' },
+              { href: '/artists', label: 'Artists' },
+              { href: '/streaks', label: 'Streaks' },
+              { href: '/chat', label: 'Chat' },
+              { href: '/dm', label: 'DMs' },
+              { href: '/sanctuary', label: 'Sanctuary' },
+              { href: '/dashboard', label: 'Dashboard' },
+              { href: '/login', label: 'Sign In' },
+            ].map(item => (
+              <a key={item.href} href={item.href} onClick={() => setOpen(false)}
+                style={{ color: 'var(--ghost)', fontSize: 24, fontFamily: "'Playfair Display', serif", fontWeight: 300, textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.07)', paddingBottom: 16 }}>
+                {item.label}
+              </a>
+            ))}
+            <a href="/apply" onClick={() => setOpen(false)}
+              style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '14px 24px', background: 'linear-gradient(135deg, #FF6B35, #FF8C5A)', color: '#03030A', fontSize: 14, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', borderRadius: 4, textDecoration: 'none', marginTop: 8 }}>
+              Apply for Passport
+            </a>
+          </div>
+        </div>
+      )}
+    </>
+  )
 }
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${inter.variable} dark`}>
       <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
@@ -38,6 +80,8 @@ export default function RootLayout({ children }) {
               <span className="font-display text-xl md:text-2xl tracking-[0.25em] text-ghost font-light">AE</span>
               <span className="font-display text-xl md:text-2xl tracking-[0.25em] text-cyan font-light">THRIX</span>
             </a>
+
+            {/* Desktop nav */}
             <div className="hidden md:flex items-center gap-6">
               <a href="/gallery" className="nav-link">Gallery</a>
               <a href="/artists" className="nav-link">Artists</a>
@@ -46,11 +90,13 @@ export default function RootLayout({ children }) {
               <a href="/dm" className="nav-link">DMs</a>
               <a href="/sanctuary" className="nav-link">Sanctuary</a>
             </div>
-            <div className="flex items-center gap-4">
+
+            <div className="flex items-center gap-3">
               <NotificationBell />
-              <a href="/dashboard" className="nav-link hidden sm:block">Dashboard</a>
-              <a href="/login" className="nav-link hidden sm:block">Sign In</a>
-              <a href="/apply" className="btn-velvet text-xs px-3 py-2 md:px-5 md:py-2.5">Apply</a>
+              <a href="/dashboard" className="nav-link hidden md:block">Dashboard</a>
+              <a href="/login" className="nav-link hidden md:block">Sign In</a>
+              <a href="/apply" className="btn-velvet text-xs px-3 py-2 md:px-5 md:py-2.5 hidden md:inline-flex">Apply</a>
+              <MobileNav />
             </div>
           </nav>
         </header>

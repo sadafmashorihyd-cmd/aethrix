@@ -23,12 +23,12 @@ function ScrollReveal({ children, delay = 0, className = '' }) {
 }
 
 const TENETS = [
-  { icon: EyeOff,      title: 'Zero Algorithm Noise',  body: 'Your work is seen because it deserves to be — not because you paid or posted at the right hour.',   color: 'var(--cyan)',   num: '01' },
-  { icon: Lock,        title: 'The Velvet Rope',        body: 'Every artist here earned their Passport. No brands, no bots, no noise. Only hands that carry ink.',   color: 'var(--violet)', num: '02' },
-  { icon: Sparkles,    title: 'Mood-Match Discovery',   body: 'Browse by feeling, not follower count. Find art that mirrors your exact state of mind at midnight.',  color: 'var(--ember)',  num: '03' },
-  { icon: Fingerprint, title: 'Your Artist Chamber',    body: 'A custom portfolio page that carries your name like a permanent exhibition — not a feed, a gallery.', color: 'var(--cyan)',   num: '04' },
-  { icon: Infinity,    title: 'The Infinite Canvas',    body: 'A living, breathing gallery. Every visit, a new constellation of masterpieces waiting to be found.',  color: 'var(--violet)', num: '05' },
-  { icon: Feather,     title: 'Pure Expression',        body: 'No like counts. No toxic metrics. The work speaks, and the right eyes will always find the right art.',color: 'var(--ember)',  num: '06' },
+  { icon: EyeOff, title: 'Zero Algorithm Noise', body: 'Your work is seen because it deserves to be — not because you paid or posted at the right hour.', color: 'var(--cyan)', num: '01' },
+  { icon: Lock, title: 'The Velvet Rope', body: 'Every artist here earned their Passport. No brands, no bots, no noise. Only hands that carry ink.', color: 'var(--violet)', num: '02' },
+  { icon: Sparkles, title: 'Mood-Match Discovery', body: 'Browse by feeling, not follower count. Find art that mirrors your exact state of mind at midnight.', color: 'var(--ember)', num: '03' },
+  { icon: Fingerprint, title: 'Your Artist Chamber', body: 'A custom portfolio page that carries your name like a permanent exhibition — not a feed, a gallery.', color: 'var(--cyan)', num: '04' },
+  { icon: Infinity, title: 'The Infinite Canvas', body: 'A living, breathing gallery. Every visit, a new constellation of masterpieces waiting to be found.', color: 'var(--violet)', num: '05' },
+  { icon: Feather, title: 'Pure Expression', body: 'No like counts. No toxic metrics. The work speaks, and the right eyes will always find the right art.', color: 'var(--ember)', num: '06' },
 ]
 
 const MOOD_COLORS = {
@@ -49,9 +49,8 @@ export default function HomePage() {
     supabase
       .from('applications')
       .select('*')
-      .eq('status', 'approved')
+      .in('username', ['sadaf-art', 'florish_fusion', 'beenish-art', 'hamdanraza-art'])
       .not('image_url', 'is', null)
-      .limit(6)
       .then(({ data }) => { if (data) setArtworks(data) })
 
     // Fetch gallery preview
@@ -71,7 +70,7 @@ export default function HomePage() {
       <section className="hero-section">
         <div className="max-w-7xl mx-auto w-full px-4 md:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-            
+
             {/* Left — Text */}
             <div>
               <div className="hero-eyebrow fade-up">A Sacred Digital Sanctuary</div>
@@ -203,9 +202,9 @@ export default function HomePage() {
           <div className="space-y-4 md:space-y-6">
             {[
               { text: 'Your art was never meant', italic: false },
-              { text: 'to chase an algorithm.',   italic: true,  color: 'var(--cyan)' },
-              { text: 'It was meant to',          italic: false },
-              { text: "stop someone's heart.",    italic: true,  color: 'var(--ember)' },
+              { text: 'to chase an algorithm.', italic: true, color: 'var(--cyan)' },
+              { text: 'It was meant to', italic: false },
+              { text: "stop someone's heart.", italic: true, color: 'var(--ember)' },
             ].map((line, i) => (
               <ScrollReveal key={i} delay={i * 120}>
                 <p className="font-display font-light leading-[1.05]"

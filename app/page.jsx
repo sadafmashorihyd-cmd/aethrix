@@ -32,10 +32,10 @@ const TENETS = [
 ]
 
 const MOOD_COLORS = {
-  'Midnight Rain': '#00E5FF',
-  'Melancholy': '#B57BFF',
+  'Midnight Rain': '#00F5FF',
+  'Melancholy': '#C084FC',
   'Sunset': '#FF6B35',
-  'Cyberpunk': '#00E5FF',
+  'Cyberpunk': '#00F5FF',
   'Wildfire': '#FF4444',
   'Deep Ocean': '#00B8D4',
 }
@@ -65,32 +65,30 @@ export default function HomePage() {
     <div className="page-enter">
 
       {/* HERO */}
-      <section className="hero-section" style={{ position: 'relative', overflow: 'hidden' }}>
+      <section className="hero-section" style={{ position: 'relative', overflow: 'hidden', minHeight: '100vh' }}>
 
-        {/* Background collage — blurred artworks */}
+        {/* Blurred background */}
         {artworks.length > 0 && (
           <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
-            {/* Background images grid */}
-            <div style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap: 4 }}>
-              {artworks.slice(0, 4).map((art, i) => (
-                <div key={art.id} style={{ overflow: 'hidden', position: 'relative' }}>
+            <div style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr' }}>
+              {[...artworks, ...artworks].slice(0, 4).map((art, i) => (
+                <div key={i} style={{ overflow: 'hidden' }}>
                   <img src={art.image_url} alt="" style={{
                     width: '100%', height: '100%', objectFit: 'cover',
-                    filter: 'blur(12px) brightness(0.35) saturate(1.6)',
-                    transform: 'scale(1.1)',
+                    filter: 'blur(14px) brightness(0.28) saturate(1.8)',
+                    transform: 'scale(1.15)', display: 'block',
                   }} />
                 </div>
               ))}
             </div>
-            {/* Dark overlay */}
-            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(8,8,24,0.92) 0%, rgba(8,8,24,0.75) 50%, rgba(8,8,24,0.88) 100%)' }} />
-            {/* Cyan glow overlay */}
-            <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 30% 50%, rgba(0,240,255,0.08), transparent 60%)' }} />
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(10,10,30,0.90) 0%, rgba(10,10,30,0.72) 50%, rgba(10,10,30,0.85) 100%)' }} />
+            <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 25% 50%, rgba(0,245,255,0.07), transparent 55%)' }} />
+            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '30%', background: 'linear-gradient(to bottom, transparent, var(--void))' }} />
           </div>
         )}
 
         <div className="max-w-7xl mx-auto w-full px-4 md:px-8" style={{ position: 'relative', zIndex: 1 }}>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
 
             {/* Left — Text */}
             <div>
@@ -113,73 +111,44 @@ export default function HomePage() {
                 </a>
               </div>
               <div className="mt-10 fade-up d4">
-                <p className="text-xs tracking-[0.35em] uppercase mb-3" style={{ color: 'rgba(234,230,242,0.18)' }}>
+                <p className="text-xs tracking-[0.35em] uppercase mb-3" style={{ color: 'rgba(245,240,255,0.2)' }}>
                   Artists from
                 </p>
                 <div className="flex flex-wrap gap-4">
                   {['Lahore', 'Istanbul', 'Tehran', 'Seoul', 'Lagos', 'Cairo'].map(c => (
-                    <span key={c} className="text-xs font-light tracking-wider" style={{ color: 'rgba(234,230,242,0.25)' }}>{c}</span>
+                    <span key={c} className="text-xs font-light tracking-wider" style={{ color: 'rgba(245,240,255,0.28)' }}>{c}</span>
                   ))}
                 </div>
               </div>
             </div>
 
-            {/* Right — Artwork Collage (foreground) */}
+            {/* Right — Clean 2x2 Grid */}
             <div className="fade-up d2">
               {artworks.length > 0 ? (
-                <div style={{ position: 'relative', height: '480px' }}>
-                  {/* Main large artwork */}
-                  <div style={{
-                    position: 'absolute', top: 0, left: '10%', width: '55%', height: '65%',
-                    borderRadius: 12, overflow: 'hidden',
-                    border: '1px solid rgba(255,255,255,0.15)',
-                    boxShadow: '0 25px 70px rgba(0,0,0,0.6), 0 0 40px rgba(0,240,255,0.1)',
-                    transform: 'rotate(-2deg)', zIndex: 3,
-                  }}>
-                    {artworks[0] && <img src={artworks[0].image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
-                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px', background: 'linear-gradient(transparent, rgba(0,0,0,0.85))' }}>
-                      <p style={{ color: 'rgba(234,230,242,0.9)', fontSize: 12, margin: 0 }}>{artworks[0]?.name}</p>
-                      <p style={{ color: MOOD_COLORS[artworks[0]?.mood] || '#00E5FF', fontSize: 10, margin: '2px 0 0', opacity: 0.8 }}>{artworks[0]?.mood}</p>
-                    </div>
-                  </div>
-
-                  {/* Second artwork */}
-                  <div style={{
-                    position: 'absolute', top: '15%', right: 0, width: '45%', height: '55%',
-                    borderRadius: 12, overflow: 'hidden',
-                    border: '1px solid rgba(255,255,255,0.15)',
-                    boxShadow: '0 25px 70px rgba(0,0,0,0.6)',
-                    transform: 'rotate(1.5deg)', zIndex: 2,
-                  }}>
-                    {artworks[1] && <img src={artworks[1].image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
-                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px', background: 'linear-gradient(transparent, rgba(0,0,0,0.85))' }}>
-                      <p style={{ color: 'rgba(234,230,242,0.9)', fontSize: 12, margin: 0 }}>{artworks[1]?.name}</p>
-                    </div>
-                  </div>
-
-                  {/* Third artwork */}
-                  <div style={{
-                    position: 'absolute', bottom: 0, left: 0, width: '42%', height: '42%',
-                    borderRadius: 12, overflow: 'hidden',
-                    border: '1px solid rgba(255,255,255,0.15)',
-                    boxShadow: '0 25px 70px rgba(0,0,0,0.6)',
-                    transform: 'rotate(2deg)', zIndex: 4,
-                  }}>
-                    {artworks[2] && <img src={artworks[2].image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
-                  </div>
-
-                  {/* Fourth artwork */}
-                  {artworks[3] && (
-                    <div style={{
-                      position: 'absolute', bottom: '5%', right: '5%', width: '35%', height: '35%',
-                      borderRadius: 12, overflow: 'hidden',
-                      border: '1px solid rgba(255,255,255,0.15)',
-                      boxShadow: '0 25px 70px rgba(0,0,0,0.6)',
-                      transform: 'rotate(-1deg)', zIndex: 1,
-                    }}>
-                      <img src={artworks[3].image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    </div>
-                  )}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  {artworks.slice(0, 4).map((art) => (
+                    <a key={art.id} href={`/artist/${art.username}`}
+                      style={{
+                        borderRadius: 10, overflow: 'hidden', display: 'block',
+                        position: 'relative', aspectRatio: '1',
+                        boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        textDecoration: 'none',
+                      }}>
+                      <img src={art.image_url} alt={art.name}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease', display: 'block' }}
+                        onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.06)'}
+                        onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} />
+                      <div style={{
+                        position: 'absolute', bottom: 0, left: 0, right: 0,
+                        padding: '10px 12px',
+                        background: 'linear-gradient(transparent, rgba(0,0,0,0.88))',
+                      }}>
+                        <p style={{ color: '#F5F0FF', fontSize: 11, margin: 0, fontWeight: 500 }}>{art.name}</p>
+                        <p style={{ color: MOOD_COLORS[art.mood] || '#00F5FF', fontSize: 10, margin: '2px 0 0', opacity: 0.85 }}>{art.medium}</p>
+                      </div>
+                    </a>
+                  ))}
                 </div>
               ) : (
                 <div className="ink-drop-container">
@@ -190,7 +159,7 @@ export default function HomePage() {
                   <div className="ink-drop ink-drop--3" />
                   <div className="absolute inset-0 flex items-center justify-center">
                     <Feather size={44} strokeWidth={0.75}
-                      style={{ color: 'var(--ghost)', opacity: 0.65, filter: 'drop-shadow(0 0 18px rgba(0,229,255,0.55))' }} />
+                      style={{ color: 'var(--ghost)', opacity: 0.65, filter: 'drop-shadow(0 0 18px rgba(0,245,255,0.55))' }} />
                   </div>
                 </div>
               )}
@@ -225,10 +194,10 @@ export default function HomePage() {
           </div>
           <ScrollReveal delay={600}>
             <div className="mt-14 max-w-xl mx-auto">
-              <p className="font-display text-lg font-light italic leading-relaxed" style={{ color: 'rgba(234,230,242,0.38)' }}>
+              <p className="font-display text-lg font-light italic leading-relaxed" style={{ color: 'rgba(245,240,255,0.42)' }}>
                 "Every great gallery has a velvet rope. Ours is digital, and it only opens for those whose hands know the weight of a brush."
               </p>
-              <p className="mt-4 text-xs tracking-widest uppercase" style={{ color: 'rgba(0,229,255,0.5)' }}>
+              <p className="mt-4 text-xs tracking-widest uppercase" style={{ color: 'rgba(0,245,255,0.55)' }}>
                 — The AETHRIX Charter, Article I
               </p>
             </div>
@@ -256,7 +225,7 @@ export default function HomePage() {
             <ScrollReveal>
               <div className="text-center py-20">
                 <Feather size={32} className="mx-auto mb-4 opacity-20" strokeWidth={0.8} />
-                <p className="font-display text-xl font-light" style={{ color: 'rgba(234,230,242,0.3)' }}>
+                <p className="font-display text-xl font-light" style={{ color: 'rgba(245,240,255,0.3)' }}>
                   Gallery opening soon.
                 </p>
               </div>
@@ -273,7 +242,7 @@ export default function HomePage() {
                     <div className="artwork-card-overlay">
                       <a href={`/artist/${art.username}`}
                         className="text-xs tracking-widest uppercase mb-1 block"
-                        style={{ color: MOOD_COLORS[art.mood] || 'var(--cyan)', opacity: 0.7 }}>
+                        style={{ color: MOOD_COLORS[art.mood] || 'var(--cyan)', opacity: 0.8 }}>
                         {art.name}
                       </a>
                       <p className="font-display text-lg font-light" style={{ color: 'var(--ghost)' }}>{art.medium}</p>
@@ -309,7 +278,7 @@ export default function HomePage() {
                       <Icon size={16} style={{ color: t.color }} strokeWidth={1.5} />
                     </div>
                     <h3 className="font-display text-xl font-light mb-2 leading-tight" style={{ color: 'var(--ghost)' }}>{t.title}</h3>
-                    <p className="text-sm leading-relaxed" style={{ color: 'rgba(234,230,242,0.38)' }}>{t.body}</p>
+                    <p className="text-sm leading-relaxed" style={{ color: 'rgba(245,240,255,0.42)' }}>{t.body}</p>
                   </div>
                 </ScrollReveal>
               )
@@ -327,7 +296,7 @@ export default function HomePage() {
               The doors are open.<br />
               <em className="italic" style={{ color: 'var(--cyan)' }}>But only for artists.</em>
             </h2>
-            <p className="font-display text-lg font-light italic leading-relaxed mb-10" style={{ color: 'rgba(234,230,242,0.38)' }}>
+            <p className="font-display text-lg font-light italic leading-relaxed mb-10" style={{ color: 'rgba(245,240,255,0.42)' }}>
               Submit one piece. Earn your Passport. Step into the only sanctuary
               the internet has ever built for artists who refuse to perform.
             </p>

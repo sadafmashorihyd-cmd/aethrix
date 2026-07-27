@@ -45,7 +45,6 @@ export default function HomePage() {
   const [previews, setPreviews] = useState([])
 
   useEffect(() => {
-    // Fetch hero collage artworks
     supabase
       .from('applications')
       .select('*')
@@ -53,7 +52,6 @@ export default function HomePage() {
       .not('image_url', 'is', null)
       .then(({ data }) => { if (data) setArtworks(data) })
 
-    // Fetch gallery preview
     supabase
       .from('applications')
       .select('*')
@@ -67,8 +65,31 @@ export default function HomePage() {
     <div className="page-enter">
 
       {/* HERO */}
-      <section className="hero-section">
-        <div className="max-w-7xl mx-auto w-full px-4 md:px-8">
+      <section className="hero-section" style={{ position: 'relative', overflow: 'hidden' }}>
+
+        {/* Background collage — blurred artworks */}
+        {artworks.length > 0 && (
+          <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
+            {/* Background images grid */}
+            <div style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap: 4 }}>
+              {artworks.slice(0, 4).map((art, i) => (
+                <div key={art.id} style={{ overflow: 'hidden', position: 'relative' }}>
+                  <img src={art.image_url} alt="" style={{
+                    width: '100%', height: '100%', objectFit: 'cover',
+                    filter: 'blur(8px) brightness(0.25) saturate(1.4)',
+                    transform: 'scale(1.1)',
+                  }} />
+                </div>
+              ))}
+            </div>
+            {/* Dark overlay */}
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(8,8,24,0.92) 0%, rgba(8,8,24,0.75) 50%, rgba(8,8,24,0.88) 100%)' }} />
+            {/* Cyan glow overlay */}
+            <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 30% 50%, rgba(0,240,255,0.08), transparent 60%)' }} />
+          </div>
+        )}
+
+        <div className="max-w-7xl mx-auto w-full px-4 md:px-8" style={{ position: 'relative', zIndex: 1 }}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
 
             {/* Left — Text */}
@@ -103,7 +124,7 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Right — Artwork Collage */}
+            {/* Right — Artwork Collage (foreground) */}
             <div className="fade-up d2">
               {artworks.length > 0 ? (
                 <div style={{ position: 'relative', height: '480px' }}>
@@ -111,13 +132,12 @@ export default function HomePage() {
                   <div style={{
                     position: 'absolute', top: 0, left: '10%', width: '55%', height: '65%',
                     borderRadius: 12, overflow: 'hidden',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
-                    transform: 'rotate(-2deg)',
-                    zIndex: 3,
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    boxShadow: '0 25px 70px rgba(0,0,0,0.6), 0 0 40px rgba(0,240,255,0.1)',
+                    transform: 'rotate(-2deg)', zIndex: 3,
                   }}>
                     {artworks[0] && <img src={artworks[0].image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
-                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px', background: 'linear-gradient(transparent, rgba(0,0,0,0.8))' }}>
+                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px', background: 'linear-gradient(transparent, rgba(0,0,0,0.85))' }}>
                       <p style={{ color: 'rgba(234,230,242,0.9)', fontSize: 12, margin: 0 }}>{artworks[0]?.name}</p>
                       <p style={{ color: MOOD_COLORS[artworks[0]?.mood] || '#00E5FF', fontSize: 10, margin: '2px 0 0', opacity: 0.8 }}>{artworks[0]?.mood}</p>
                     </div>
@@ -127,52 +147,41 @@ export default function HomePage() {
                   <div style={{
                     position: 'absolute', top: '15%', right: 0, width: '45%', height: '55%',
                     borderRadius: 12, overflow: 'hidden',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
-                    transform: 'rotate(1.5deg)',
-                    zIndex: 2,
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    boxShadow: '0 25px 70px rgba(0,0,0,0.6)',
+                    transform: 'rotate(1.5deg)', zIndex: 2,
                   }}>
                     {artworks[1] && <img src={artworks[1].image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
-                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px', background: 'linear-gradient(transparent, rgba(0,0,0,0.8))' }}>
+                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px', background: 'linear-gradient(transparent, rgba(0,0,0,0.85))' }}>
                       <p style={{ color: 'rgba(234,230,242,0.9)', fontSize: 12, margin: 0 }}>{artworks[1]?.name}</p>
                     </div>
                   </div>
 
-                  {/* Third artwork — bottom left */}
+                  {/* Third artwork */}
                   <div style={{
                     position: 'absolute', bottom: 0, left: 0, width: '42%', height: '42%',
                     borderRadius: 12, overflow: 'hidden',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
-                    transform: 'rotate(2deg)',
-                    zIndex: 4,
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    boxShadow: '0 25px 70px rgba(0,0,0,0.6)',
+                    transform: 'rotate(2deg)', zIndex: 4,
                   }}>
                     {artworks[2] && <img src={artworks[2].image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
                   </div>
 
-                  {/* Fourth artwork — bottom right */}
+                  {/* Fourth artwork */}
                   {artworks[3] && (
                     <div style={{
                       position: 'absolute', bottom: '5%', right: '5%', width: '35%', height: '35%',
                       borderRadius: 12, overflow: 'hidden',
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
-                      transform: 'rotate(-1deg)',
-                      zIndex: 1,
+                      border: '1px solid rgba(255,255,255,0.15)',
+                      boxShadow: '0 25px 70px rgba(0,0,0,0.6)',
+                      transform: 'rotate(-1deg)', zIndex: 1,
                     }}>
                       <img src={artworks[3].image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     </div>
                   )}
-
-                  {/* Glow overlay */}
-                  <div style={{
-                    position: 'absolute', inset: 0, zIndex: 0,
-                    background: 'radial-gradient(circle at 50% 50%, rgba(0,229,255,0.08), transparent 70%)',
-                    pointerEvents: 'none',
-                  }} />
                 </div>
               ) : (
-                // Fallback — glowing orb if no artworks yet
                 <div className="ink-drop-container">
                   <div className="ink-drop-ring" />
                   <div className="ink-drop-ring ink-drop-ring--2" />
@@ -189,8 +198,8 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-25">
-          <div className="w-px h-10" style={{ background: 'linear-gradient(to bottom, var(--cyan), transparent)', animation: 'breathe 2s ease-in-out infinite' }} />
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-25" style={{ zIndex: 1 }}>
+          <div className="w-px h-10" style={{ background: 'linear-gradient(to bottom, var(--cyan), transparent)' }} />
           <p className="text-xs tracking-widest uppercase" style={{ color: 'var(--ghost-dim)' }}>Descend</p>
         </div>
       </section>
@@ -243,13 +252,12 @@ export default function HomePage() {
               </a>
             </div>
           </ScrollReveal>
-
           {previews.length === 0 ? (
             <ScrollReveal>
               <div className="text-center py-20">
                 <Feather size={32} className="mx-auto mb-4 opacity-20" strokeWidth={0.8} />
                 <p className="font-display text-xl font-light" style={{ color: 'rgba(234,230,242,0.3)' }}>
-                  Gallery opening soon. Apply for your passport.
+                  Gallery opening soon.
                 </p>
               </div>
             </ScrollReveal>
